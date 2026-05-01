@@ -8,7 +8,8 @@ import DashboardLayout from "./components/DashboardLayout";
 import IdeaExtractor from "./pages/IdeaExtractor";
 import BacktestResults from "./pages/BacktestResults";
 import Optimization from "./pages/Optimization";
-import BotDashboard from "./pages/BotDashboard";
+import AgentWorkforce from "./pages/AgentWorkforce";
+import OutcomeBilling from "./pages/OutcomeBilling";
 import StrategyLibrary from "./pages/StrategyLibrary";
 import Dashboard from "./pages/Dashboard";
 
@@ -20,7 +21,8 @@ function Router() {
         <Route path="/extractor" component={IdeaExtractor} />
         <Route path="/backtest" component={BacktestResults} />
         <Route path="/optimization" component={Optimization} />
-        <Route path="/bots" component={BotDashboard} />
+        <Route path="/agents" component={AgentWorkforce} />
+        <Route path="/billing" component={OutcomeBilling} />
         <Route path="/library" component={StrategyLibrary} />
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />

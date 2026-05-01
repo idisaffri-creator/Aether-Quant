@@ -1,7 +1,8 @@
 /*
- * DashboardLayout – Void Terminal Design
+ * DashboardLayout v2 – Void Terminal Design
  * Narrow sidebar (64px collapsed / 240px expanded) + top header bar
  * Deep space aesthetic with electric cyan accents
+ * Updated: Agent terminology, pricing tier indicator
  */
 import { useState, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
@@ -11,13 +12,15 @@ import {
   Lightbulb,
   BarChart3,
   Settings2,
-  Bot,
+  Users,
   Library,
   Bell,
   ChevronLeft,
   ChevronRight,
   Activity,
   Zap,
+  Receipt,
+  Crown,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -33,7 +36,8 @@ const navItems = [
   { path: "/extractor", label: "Idea Extractor", icon: Lightbulb },
   { path: "/backtest", label: "Backtest", icon: BarChart3 },
   { path: "/optimization", label: "Optimization", icon: Settings2 },
-  { path: "/bots", label: "Bot Dashboard", icon: Bot },
+  { path: "/agents", label: "Agent Workforce", icon: Users },
+  { path: "/billing", label: "Outcome Billing", icon: Receipt },
   { path: "/library", label: "Strategy Library", icon: Library },
 ];
 
@@ -140,9 +144,22 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           )}
         </button>
 
-        {/* Bottom section */}
-        <div className="p-3 border-t border-border">
-          <div className="flex items-center gap-2">
+        {/* Bottom section — Plan tier */}
+        <div className="p-3 border-t border-border space-y-2">
+          <AnimatePresence>
+            {!collapsed && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-primary/5 border border-primary/20"
+              >
+                <Crown className="w-3.5 h-3.5 text-primary shrink-0" />
+                <span className="text-xs font-mono text-primary font-medium">Full AETHER</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          <div className="flex items-center gap-2 px-2">
             <div className="w-2 h-2 rounded-full bg-profit animate-pulse-glow shrink-0" />
             <AnimatePresence>
               {!collapsed && (
@@ -186,6 +203,15 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               <span>GC: $2,048.30</span>
               <span className="text-loss">-0.18%</span>
             </div>
+
+            {/* Pricing tier badge */}
+            <Badge
+              variant="outline"
+              className="hidden lg:flex text-[10px] font-mono border-primary/20 text-primary/80 bg-primary/5 gap-1"
+            >
+              <Crown className="w-2.5 h-2.5" />
+              Full AETHER
+            </Badge>
 
             {/* Notifications */}
             <button

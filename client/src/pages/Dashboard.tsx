@@ -1,12 +1,13 @@
 /*
- * Dashboard – Void Terminal Command Center Overview
+ * Dashboard v2 – Void Terminal Command Center Overview
  * Hero metrics, daily PnL chart, portfolio allocation, activity feed
+ * Updated: Agent terminology, workforce metrics
  */
 import { motion } from "framer-motion";
 import {
   TrendingUp,
   TrendingDown,
-  Bot,
+  Users,
   Library,
   Activity,
   ArrowUpRight,
@@ -17,8 +18,6 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  AreaChart,
-  Area,
   BarChart,
   Bar,
   XAxis,
@@ -35,7 +34,7 @@ import {
   dailyPnlData,
   portfolioAllocation,
   recentActivity,
-  botsData,
+  agentsData,
 } from "@/lib/mockData";
 
 const containerVariants = {
@@ -121,8 +120,8 @@ function ActivityIcon({ type }: { type: string }) {
   switch (type) {
     case "trade":
       return <ArrowUpRight className="w-3.5 h-3.5 text-profit" />;
-    case "bot":
-      return <Bot className="w-3.5 h-3.5 text-primary" />;
+    case "agent":
+      return <Users className="w-3.5 h-3.5 text-primary" />;
     case "alert":
       return <Activity className="w-3.5 h-3.5 text-loss" />;
     case "strategy":
@@ -157,10 +156,10 @@ export default function Dashboard() {
           positive={dashboardMetrics.dailyPnl >= 0}
         />
         <MetricCard
-          label="Active Bots"
-          value={String(dashboardMetrics.activeBots)}
+          label="Active Agents"
+          value={String(dashboardMetrics.activeAgents)}
           change={`${dashboardMetrics.totalStrategies} strategies`}
-          icon={Bot}
+          icon={Users}
           positive
         />
         <MetricCard
@@ -295,9 +294,9 @@ export default function Dashboard() {
         </motion.div>
       </div>
 
-      {/* Bottom Row: Bot Status + Activity */}
+      {/* Bottom Row: Agent Status + Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Active Bots Summary */}
+        {/* Active Agents Summary */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -306,41 +305,41 @@ export default function Dashboard() {
           <Card className="bg-card border-border">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-display font-semibold text-foreground flex items-center gap-2">
-                <Bot className="w-4 h-4 text-primary" />
-                Active Bots
+                <Users className="w-4 h-4 text-primary" />
+                Agent Workforce
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {botsData
-                  .filter((b) => b.status === "running")
+                {agentsData
+                  .filter((a) => a.status === "running")
                   .slice(0, 4)
-                  .map((bot) => (
+                  .map((agent) => (
                     <div
-                      key={bot.id}
+                      key={agent.id}
                       className="flex items-center justify-between py-2 border-b border-border/50 last:border-0"
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-2 h-2 rounded-full bg-profit animate-pulse-glow" />
                         <div>
                           <p className="text-sm font-medium text-foreground">
-                            {bot.name}
+                            {agent.name}
                           </p>
                           <p className="text-xs text-muted-foreground font-mono">
-                            {bot.asset}
+                            {agent.asset}
                           </p>
                         </div>
                       </div>
                       <div className="text-right">
                         <p
                           className={`text-sm font-mono font-semibold ${
-                            bot.dailyPnl >= 0 ? "text-profit" : "text-loss"
+                            agent.dailyPnl >= 0 ? "text-profit" : "text-loss"
                           }`}
                         >
-                          {bot.dailyPnl >= 0 ? "+" : ""}${bot.dailyPnl.toLocaleString()}
+                          {agent.dailyPnl >= 0 ? "+" : ""}${agent.dailyPnl.toLocaleString()}
                         </p>
                         <p className="text-xs text-muted-foreground font-mono">
-                          {bot.tradeCount} trades
+                          {agent.tradeCount} trades
                         </p>
                       </div>
                     </div>

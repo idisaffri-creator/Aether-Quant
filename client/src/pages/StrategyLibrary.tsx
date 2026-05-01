@@ -233,7 +233,7 @@ export default function StrategyLibrary() {
                           size="sm"
                           className="text-xs font-display bg-primary text-primary-foreground hover:bg-primary/90"
                           onClick={() =>
-                            toast.success(`Deploying ${strategy.name} as bot...`)
+                            toast.success(`Deploying ${strategy.name} as autonomous agent...`)
                           }
                         >
                           <Rocket className="w-3 h-3 mr-1" />

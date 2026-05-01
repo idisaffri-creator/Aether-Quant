@@ -1,6 +1,7 @@
 // ============================================================
-// Aether Quant – Realistic Mock Data
+// Aether Quant v2 – Realistic Mock Data
 // Design: Void Terminal / Deep Space Command Center
+// Terminology: Autonomous Trading Agents (not bots)
 // ============================================================
 
 // Seeded PRNG for deterministic data
@@ -90,96 +91,114 @@ export const optimizationResults = [
   { rank: 20, lookback: 17, threshold: 1.2, stopLoss: 1.5, takeProfit: 3.4, sharpe: 1.49, cagr: 14.9, winRate: 71.0, maxDD: -12.8 },
 ];
 
-// Bot data
-export const botsData = [
+// Agent data (renamed from bots)
+export const agentsData = [
   {
-    id: "bot-001",
+    id: "agent-001",
     name: "Alpha Crude Momentum",
     asset: "CL (Crude Oil)",
     status: "running" as const,
     dailyPnl: 3420,
     totalPnl: 48750,
+    cumulativeValue: 148200,
+    performanceFee: 14820,
     uptime: "14d 7h 23m",
     tradeCount: 156,
     winRate: 68.5,
     lastHeartbeat: new Date(Date.now() - 3000),
     strategy: "Mean Reversion + Momentum Crossover",
     riskLevel: "Medium",
+    domainPersona: "Energy Specialist — WTI/Brent correlation, OPEC sentiment, inventory cycles",
   },
   {
-    id: "bot-002",
+    id: "agent-002",
     name: "Gold Spread Arb",
     asset: "GC (Gold)",
     status: "running" as const,
     dailyPnl: -1280,
     totalPnl: 31200,
+    cumulativeValue: 89400,
+    performanceFee: 8940,
     uptime: "8d 12h 45m",
     tradeCount: 89,
     winRate: 72.1,
     lastHeartbeat: new Date(Date.now() - 5000),
     strategy: "Calendar Spread Arbitrage",
     riskLevel: "Low",
+    domainPersona: "Precious Metals Analyst — term structure, central bank flows, safe-haven dynamics",
   },
   {
-    id: "bot-003",
+    id: "agent-003",
     name: "NatGas Volatility",
     asset: "NG (Natural Gas)",
     status: "running" as const,
     dailyPnl: 5670,
     totalPnl: 22100,
+    cumulativeValue: 67800,
+    performanceFee: 6780,
     uptime: "3d 18h 12m",
     tradeCount: 234,
     winRate: 61.3,
     lastHeartbeat: new Date(Date.now() - 2000),
     strategy: "Straddle on Volatility Breakout",
     riskLevel: "High",
+    domainPersona: "Gas Market Expert — weather models, storage reports, LNG cargo flows",
   },
   {
-    id: "bot-004",
+    id: "agent-004",
     name: "Copper Trend Follow",
     asset: "HG (Copper)",
     status: "stopped" as const,
     dailyPnl: 0,
     totalPnl: 15800,
+    cumulativeValue: 42300,
+    performanceFee: 4230,
     uptime: "0d 0h 0m",
     tradeCount: 67,
     winRate: 65.7,
     lastHeartbeat: new Date(Date.now() - 86400000),
     strategy: "Dual Moving Average Crossover",
     riskLevel: "Medium",
+    domainPersona: "Industrial Metals Tracker — China PMI, LME warehouse, green transition demand",
   },
   {
-    id: "bot-005",
+    id: "agent-005",
     name: "Wheat Seasonal",
     asset: "ZW (Wheat)",
     status: "running" as const,
     dailyPnl: 890,
     totalPnl: 8450,
+    cumulativeValue: 28900,
+    performanceFee: 2890,
     uptime: "21d 3h 56m",
     tradeCount: 42,
     winRate: 76.2,
     lastHeartbeat: new Date(Date.now() - 4000),
     strategy: "Seasonal Pattern + RSI Filter",
     riskLevel: "Low",
+    domainPersona: "Agri Specialist — WASDE reports, planting progress, export inspections",
   },
   {
-    id: "bot-006",
+    id: "agent-006",
     name: "Silver 0DTE Options",
     asset: "SI (Silver)",
     status: "running" as const,
     dailyPnl: 2150,
     totalPnl: 19300,
+    cumulativeValue: 56200,
+    performanceFee: 5620,
     uptime: "6d 9h 30m",
     tradeCount: 312,
     winRate: 58.9,
     lastHeartbeat: new Date(Date.now() - 1000),
     strategy: "0DTE Iron Condor with Delta Hedge",
     riskLevel: "High",
+    domainPersona: "Options Volatility Expert — gamma exposure, dealer positioning, skew dynamics",
   },
 ];
 
-// Bot trade logs
-export const botTradeLogs: Record<string, Array<{
+// Agent trade logs
+export const agentTradeLogs: Record<string, Array<{
   id: number;
   time: string;
   action: string;
@@ -187,19 +206,19 @@ export const botTradeLogs: Record<string, Array<{
   quantity: number;
   pnl: number | null;
 }>> = {
-  "bot-001": [
-    { id: 1, time: "2026-03-15 09:31:02", action: "BUY", price: 71.45, quantity: 10, pnl: null },
-    { id: 2, time: "2026-03-15 14:22:18", action: "SELL", price: 73.12, quantity: 10, pnl: 1670 },
-    { id: 3, time: "2026-03-16 09:30:45", action: "SELL SHORT", price: 73.80, quantity: 8, pnl: null },
-    { id: 4, time: "2026-03-16 11:45:33", action: "BUY COVER", price: 72.95, quantity: 8, pnl: 680 },
-    { id: 5, time: "2026-03-17 10:15:22", action: "BUY", price: 72.10, quantity: 12, pnl: null },
-    { id: 6, time: "2026-03-17 15:30:11", action: "SELL", price: 72.85, quantity: 12, pnl: 900 },
+  "agent-001": [
+    { id: 1, time: "2026-05-01 09:31:02", action: "BUY", price: 71.45, quantity: 10, pnl: null },
+    { id: 2, time: "2026-05-01 14:22:18", action: "SELL", price: 73.12, quantity: 10, pnl: 1670 },
+    { id: 3, time: "2026-05-02 09:30:45", action: "SELL SHORT", price: 73.80, quantity: 8, pnl: null },
+    { id: 4, time: "2026-05-02 11:45:33", action: "BUY COVER", price: 72.95, quantity: 8, pnl: 680 },
+    { id: 5, time: "2026-05-03 10:15:22", action: "BUY", price: 72.10, quantity: 12, pnl: null },
+    { id: 6, time: "2026-05-03 15:30:11", action: "SELL", price: 72.85, quantity: 12, pnl: 900 },
   ],
-  "bot-002": [
-    { id: 1, time: "2026-03-14 09:30:15", action: "BUY", price: 2045.30, quantity: 2, pnl: null },
-    { id: 2, time: "2026-03-14 14:00:22", action: "SELL", price: 2052.80, quantity: 2, pnl: 1500 },
-    { id: 3, time: "2026-03-15 10:00:05", action: "BUY", price: 2058.10, quantity: 3, pnl: null },
-    { id: 4, time: "2026-03-15 15:45:30", action: "SELL", price: 2049.20, quantity: 3, pnl: -2670 },
+  "agent-002": [
+    { id: 1, time: "2026-04-30 09:30:15", action: "BUY", price: 2045.30, quantity: 2, pnl: null },
+    { id: 2, time: "2026-04-30 14:00:22", action: "SELL", price: 2052.80, quantity: 2, pnl: 1500 },
+    { id: 3, time: "2026-05-01 10:00:05", action: "BUY", price: 2058.10, quantity: 3, pnl: null },
+    { id: 4, time: "2026-05-01 15:45:30", action: "SELL", price: 2049.20, quantity: 3, pnl: -2670 },
   ],
 };
 
@@ -210,7 +229,7 @@ export const strategyLibrary = [
     name: "Crude Oil Mean Reversion",
     asset: "CL (Crude Oil)",
     type: "Backtest",
-    date: "2026-03-15",
+    date: "2026-04-15",
     cagr: 18.7,
     sharpe: 1.84,
     winRate: 68.3,
@@ -223,7 +242,7 @@ export const strategyLibrary = [
     name: "Gold Calendar Spread",
     asset: "GC (Gold)",
     type: "Optimization",
-    date: "2026-03-12",
+    date: "2026-04-12",
     cagr: 15.2,
     sharpe: 2.08,
     winRate: 72.1,
@@ -236,7 +255,7 @@ export const strategyLibrary = [
     name: "NatGas Vol Breakout",
     asset: "NG (Natural Gas)",
     type: "Backtest",
-    date: "2026-03-10",
+    date: "2026-04-10",
     cagr: 24.5,
     sharpe: 1.52,
     winRate: 61.3,
@@ -249,7 +268,7 @@ export const strategyLibrary = [
     name: "Copper Trend Following",
     asset: "HG (Copper)",
     type: "Backtest",
-    date: "2026-03-08",
+    date: "2026-04-08",
     cagr: 12.8,
     sharpe: 1.45,
     winRate: 55.7,
@@ -262,7 +281,7 @@ export const strategyLibrary = [
     name: "Wheat Seasonal Pattern",
     asset: "ZW (Wheat)",
     type: "Optimization",
-    date: "2026-03-05",
+    date: "2026-04-05",
     cagr: 9.4,
     sharpe: 1.92,
     winRate: 76.2,
@@ -275,7 +294,7 @@ export const strategyLibrary = [
     name: "Silver 0DTE Iron Condor",
     asset: "SI (Silver)",
     type: "Backtest",
-    date: "2026-03-01",
+    date: "2026-04-01",
     cagr: 31.2,
     sharpe: 1.38,
     winRate: 58.9,
@@ -288,7 +307,7 @@ export const strategyLibrary = [
     name: "Multi-Commodity Momentum",
     asset: "Multi",
     type: "Optimization",
-    date: "2026-02-28",
+    date: "2026-03-28",
     cagr: 16.3,
     sharpe: 1.71,
     winRate: 64.8,
@@ -301,7 +320,7 @@ export const strategyLibrary = [
     name: "Crude Crack Spread",
     asset: "CL/RB/HO",
     type: "Backtest",
-    date: "2026-02-25",
+    date: "2026-03-25",
     cagr: 14.1,
     sharpe: 1.65,
     winRate: 67.2,
@@ -311,11 +330,11 @@ export const strategyLibrary = [
   },
 ];
 
-// Dashboard overview metrics
+// Dashboard overview metrics (v2 — agents, not bots)
 export const dashboardMetrics = {
   totalPnl: 145600,
   dailyPnl: 10850,
-  activeBots: 5,
+  activeAgents: 5,
   totalStrategies: 8,
   avgSharpe: 1.72,
   portfolioValue: 2450000,
@@ -332,16 +351,16 @@ export const portfolioAllocation = [
   { name: "Others", value: 10, color: "oklch(0.6 0.015 250)" },
 ];
 
-// Recent activity feed
+// Recent activity feed (v2 — agent terminology)
 export const recentActivity = [
-  { id: 1, type: "trade", message: "Alpha Crude Momentum executed BUY CL @ $72.85", time: "2 min ago", icon: "trade" },
-  { id: 2, type: "bot", message: "NatGas Volatility bot heartbeat confirmed", time: "5 min ago", icon: "bot" },
-  { id: 3, type: "alert", message: "Gold Spread Arb daily loss limit at 60%", time: "12 min ago", icon: "alert" },
-  { id: 4, type: "strategy", message: "Backtest completed: Crude Crack Spread", time: "1 hour ago", icon: "strategy" },
-  { id: 5, type: "trade", message: "Wheat Seasonal executed SELL ZW @ $628.75", time: "2 hours ago", icon: "trade" },
-  { id: 6, type: "system", message: "Risk layer updated: new correlation limits", time: "3 hours ago", icon: "system" },
-  { id: 7, type: "bot", message: "Silver 0DTE Options bot started successfully", time: "6 hours ago", icon: "bot" },
-  { id: 8, type: "strategy", message: "Optimization completed: Multi-Commodity Momentum", time: "8 hours ago", icon: "strategy" },
+  { id: 1, type: "trade", message: "Alpha Crude Momentum agent executed BUY CL @ $72.85", time: "2 min ago" },
+  { id: 2, type: "agent", message: "NatGas Volatility agent heartbeat confirmed", time: "5 min ago" },
+  { id: 3, type: "alert", message: "Gold Spread Arb agent daily loss limit at 60%", time: "12 min ago" },
+  { id: 4, type: "strategy", message: "Backtest completed: Crude Crack Spread", time: "1 hour ago" },
+  { id: 5, type: "trade", message: "Wheat Seasonal agent executed SELL ZW @ $628.75", time: "2 hours ago" },
+  { id: 6, type: "system", message: "Risk layer updated: new correlation limits", time: "3 hours ago" },
+  { id: 7, type: "agent", message: "Silver 0DTE Options agent deployed to workforce", time: "6 hours ago" },
+  { id: 8, type: "strategy", message: "Agent-driven discovery completed: Multi-Commodity Momentum", time: "8 hours ago" },
 ];
 
 // Daily PnL chart data (last 30 days)
@@ -358,3 +377,94 @@ export const dailyPnlData = (() => {
   }
   return data;
 })();
+
+// ============================================================
+// NEW v2: Outcome Billing & Attribution Data
+// ============================================================
+
+export const currentPlan = {
+  tier: "Full AETHER" as const,
+  monthlyFee: 199,
+  agentsIncluded: 10,
+  agentsActive: 5,
+  additionalAgentCost: 29,
+  performanceFeeRate: 0.10, // 10%
+  optimizationCreditsTotal: -1, // unlimited
+  optimizationCreditsUsed: 47,
+};
+
+export const billingData = {
+  currentMonth: "May 2026",
+  billingCycleStart: "2026-05-01",
+  billingCycleEnd: "2026-05-31",
+  daysRemaining: 30,
+  // Value generated by agents this month
+  totalValueGenerated: 145600,
+  // Performance fees accrued (10% of P&L)
+  performanceFeesAccrued: 14560,
+  // Platform access fee
+  accessFee: 199,
+  // Total estimated bill
+  estimatedBill: 14759,
+  // Credits
+  creditsUsed: 47,
+  creditsRemaining: -1, // unlimited for Full AETHER
+  // Historical billing
+  previousMonths: [
+    { month: "Apr 2026", valueGenerated: 128400, performanceFee: 12840, accessFee: 199, total: 13039 },
+    { month: "Mar 2026", valueGenerated: 98200, performanceFee: 9820, accessFee: 199, total: 10019 },
+    { month: "Feb 2026", valueGenerated: 72100, performanceFee: 7210, accessFee: 199, total: 7409 },
+    { month: "Jan 2026", valueGenerated: 54800, performanceFee: 5480, accessFee: 199, total: 5679 },
+  ],
+};
+
+// Per-agent value attribution for billing
+export const agentAttribution = [
+  { agentId: "agent-001", name: "Alpha Crude Momentum", valueGenerated: 48750, performanceFee: 4875, tradesExecuted: 156, roi: 34.2 },
+  { agentId: "agent-002", name: "Gold Spread Arb", valueGenerated: 31200, performanceFee: 3120, tradesExecuted: 89, roi: 22.8 },
+  { agentId: "agent-003", name: "NatGas Volatility", valueGenerated: 22100, performanceFee: 2210, tradesExecuted: 234, roi: 18.4 },
+  { agentId: "agent-004", name: "Copper Trend Follow", valueGenerated: 15800, performanceFee: 1580, tradesExecuted: 67, roi: 12.6 },
+  { agentId: "agent-005", name: "Wheat Seasonal", valueGenerated: 8450, performanceFee: 845, tradesExecuted: 42, roi: 9.8 },
+  { agentId: "agent-006", name: "Silver 0DTE Options", valueGenerated: 19300, performanceFee: 1930, tradesExecuted: 312, roi: 28.1 },
+];
+
+// Value vs Cost comparison data (monthly)
+export const valueVsCostData = [
+  { month: "Jan", valueGenerated: 54800, costPaid: 5679, ratio: 9.65 },
+  { month: "Feb", valueGenerated: 72100, costPaid: 7409, ratio: 9.73 },
+  { month: "Mar", valueGenerated: 98200, costPaid: 10019, ratio: 9.80 },
+  { month: "Apr", valueGenerated: 128400, costPaid: 13039, ratio: 9.85 },
+  { month: "May*", valueGenerated: 145600, costPaid: 14759, ratio: 9.86 },
+];
+
+// Pricing tiers for display
+export const pricingTiers = [
+  {
+    name: "Intelligence Feed",
+    price: 30,
+    agents: 0,
+    additionalAgent: null,
+    performanceFee: null,
+    optimizationCredits: 0,
+    features: ["Market intelligence feed", "Strategy ideas", "Read-only access"],
+  },
+  {
+    name: "Strategy Studio",
+    price: 99,
+    agents: 3,
+    additionalAgent: 49,
+    performanceFee: 10,
+    optimizationCredits: 20,
+    features: ["3 autonomous agents", "Backtest engine", "20 optimization runs/mo", "10% performance fee"],
+  },
+  {
+    name: "Full AETHER",
+    price: 199,
+    agents: 10,
+    additionalAgent: 29,
+    performanceFee: 10,
+    optimizationCredits: -1,
+    features: ["10 autonomous agents", "Unlimited optimizations", "Priority execution", "10% performance fee", "Domain intelligence layer"],
+    current: true,
+  },
+];
