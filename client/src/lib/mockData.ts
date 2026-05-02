@@ -91,13 +91,74 @@ export const optimizationResults = [
   { rank: 20, lookback: 17, threshold: 1.2, stopLoss: 1.5, takeProfit: 3.4, sharpe: 1.49, cagr: 14.9, winRate: 71.0, maxDD: -12.8 },
 ];
 
-// Agent data (renamed from bots)
-export const agentsData = [
+// ============================================================
+// AGENT IDENTITY ARCHITECTURE (SOUL.md pattern)
+// ============================================================
+
+export interface AgentIdentity {
+  id: string;
+  name: string;
+  role: string;
+  avatar: string; // emoji icon
+  asset: string;
+  status: "running" | "stopped";
+  // SOUL.md fields
+  personality: string;
+  rules: string[];
+  skills: string[];
+  schedule: { label: string; time: string }[];
+  heartbeatPattern: string;
+  // Context system (6 markdown files concept)
+  context: {
+    market: string[];   // data feeds monitored
+    strategy: string;   // ATEE parameters
+    risk: string[];     // limits and constraints
+    memory: string[];   // past trades, lessons learned
+  };
+  // Performance
+  dailyPnl: number;
+  totalPnl: number;
+  cumulativeValue: number;
+  performanceFee: number;
+  uptime: string;
+  tradeCount: number;
+  winRate: number;
+  lastHeartbeat: Date;
+  strategy: string;
+  riskLevel: string;
+  domainPersona: string;
+}
+
+export const agentsData: AgentIdentity[] = [
   {
     id: "agent-001",
     name: "Alpha Crude Momentum",
+    role: "Energy Trading Specialist",
+    avatar: "🛢️",
     asset: "CL (Crude Oil)",
-    status: "running" as const,
+    status: "running",
+    personality: "Aggressive momentum hunter with disciplined risk management. Thrives in trending markets, steps aside during consolidation.",
+    rules: [
+      "Max position size: 3% of portfolio",
+      "Daily loss limit: $5,000",
+      "No trades during OPEC announcements",
+      "Minimum 2:1 reward-to-risk ratio",
+    ],
+    skills: ["ATEE Extraction", "Momentum Analysis", "Backtest Engine", "Order Execution", "Risk Monitoring"],
+    schedule: [
+      { label: "Pre-market scan", time: "06:00 ET" },
+      { label: "Signal generation", time: "09:15 ET" },
+      { label: "Active trading", time: "09:30–15:00 ET" },
+      { label: "EOD reconciliation", time: "16:00 ET" },
+      { label: "Overnight analysis", time: "20:00 ET" },
+    ],
+    heartbeatPattern: "Every 30 seconds during market hours",
+    context: {
+      market: ["Bloomberg CL futures", "Kpler tanker flows", "EIA inventory data", "OPEC+ newsfeeds", "Brent-WTI spread"],
+      strategy: "Mean Reversion + Momentum Crossover | Lookback: 20 | Entry: 1.5σ | SL: 2 ATR | TP: 4.5 ATR",
+      risk: ["Max drawdown: 12%", "Correlation limit: 0.6 with other agents", "Position sizing: Kelly criterion (half-Kelly)", "Circuit breaker: -3% intraday"],
+      memory: ["Learned to avoid trading during API report release", "Improved exit timing after Q1 2026 review", "Reduced position size during low-vol regimes"],
+    },
     dailyPnl: 3420,
     totalPnl: 48750,
     cumulativeValue: 148200,
@@ -113,8 +174,32 @@ export const agentsData = [
   {
     id: "agent-002",
     name: "Gold Spread Arb",
+    role: "Precious Metals Analyst",
+    avatar: "🥇",
     asset: "GC (Gold)",
-    status: "running" as const,
+    status: "running",
+    personality: "Patient, methodical arbitrageur. Waits for high-probability setups in term structure dislocations.",
+    rules: [
+      "Max position size: 2% of portfolio",
+      "Only trade when spread > 2σ from mean",
+      "No new positions 1hr before FOMC",
+      "Max 3 concurrent spread positions",
+    ],
+    skills: ["Spread Analysis", "Term Structure Modeling", "Calendar Roll Timing", "Order Execution", "Central Bank Monitoring"],
+    schedule: [
+      { label: "Overnight spread scan", time: "05:00 ET" },
+      { label: "Asian session review", time: "07:00 ET" },
+      { label: "Active arbitrage", time: "08:30–14:00 ET" },
+      { label: "Position roll check", time: "14:30 ET" },
+      { label: "Risk report", time: "16:30 ET" },
+    ],
+    heartbeatPattern: "Every 45 seconds during market hours",
+    context: {
+      market: ["COMEX gold futures curve", "Central bank gold reserves", "ETF flows (GLD/IAU)", "USD index", "Real yields (TIPS)"],
+      strategy: "Calendar Spread Arbitrage | Z-score entry: 2.0 | Mean reversion target | Roll-adjusted",
+      risk: ["Max drawdown: 8%", "Spread convergence timeout: 5 days", "Leg risk limit: $2,000", "No naked directional exposure"],
+      memory: ["FOMC meetings cause spread widening — learned to flatten before", "Asian session offers best entry liquidity", "Reduced size during options expiry weeks"],
+    },
     dailyPnl: -1280,
     totalPnl: 31200,
     cumulativeValue: 89400,
@@ -130,8 +215,32 @@ export const agentsData = [
   {
     id: "agent-003",
     name: "NatGas Volatility",
+    role: "Gas Market Expert",
+    avatar: "🔥",
     asset: "NG (Natural Gas)",
-    status: "running" as const,
+    status: "running",
+    personality: "High-frequency volatility trader. Embraces chaos in weather-driven markets. Quick to cut losses.",
+    rules: [
+      "Max position size: 4% of portfolio",
+      "Daily loss limit: $8,000",
+      "Scale into positions (3 tranches)",
+      "Exit all before storage report if >2x normal vol",
+    ],
+    skills: ["Volatility Modeling", "Weather Data Integration", "Straddle Construction", "Rapid Execution", "Storage Report Analysis"],
+    schedule: [
+      { label: "Weather model check", time: "05:30 ET" },
+      { label: "Pre-open vol assessment", time: "08:45 ET" },
+      { label: "Active trading", time: "09:30–14:30 ET" },
+      { label: "Storage report trade", time: "10:30 ET (Thu)" },
+      { label: "EOD vol reconciliation", time: "15:00 ET" },
+    ],
+    heartbeatPattern: "Every 15 seconds during market hours",
+    context: {
+      market: ["Henry Hub futures", "NOAA weather forecasts", "EIA storage reports", "LNG cargo tracking (Kpler)", "Power grid demand data"],
+      strategy: "Straddle on Volatility Breakout | ATR multiplier: 2.5 | Vol regime filter | Weather catalyst trigger",
+      risk: ["Max drawdown: 18%", "Position timeout: 4 hours", "Vol crush protection: exit if IV drops 20%", "No overnight during polar vortex events"],
+      memory: ["Storage report Thursdays are highest-edge days", "Polar vortex 2026 taught faster exit discipline", "Summer shoulder months = reduce size 50%"],
+    },
     dailyPnl: 5670,
     totalPnl: 22100,
     cumulativeValue: 67800,
@@ -147,8 +256,32 @@ export const agentsData = [
   {
     id: "agent-004",
     name: "Copper Trend Follow",
+    role: "Industrial Metals Tracker",
+    avatar: "🏭",
     asset: "HG (Copper)",
-    status: "stopped" as const,
+    status: "stopped",
+    personality: "Patient trend follower. Lets winners run, cuts losers quickly. Focused on macro-driven moves.",
+    rules: [
+      "Max position size: 2.5% of portfolio",
+      "Only enter on confirmed trend (ADX > 25)",
+      "Trail stop at 2 ATR",
+      "No counter-trend trades",
+    ],
+    skills: ["Trend Detection", "Macro Analysis", "Moving Average Systems", "Position Sizing", "China PMI Monitoring"],
+    schedule: [
+      { label: "China data review", time: "21:00 ET (prev day)" },
+      { label: "LME open scan", time: "03:00 ET" },
+      { label: "COMEX session", time: "08:30–13:00 ET" },
+      { label: "Trend assessment", time: "15:00 ET" },
+      { label: "Weekly macro review", time: "Fri 16:00 ET" },
+    ],
+    heartbeatPattern: "Every 60 seconds during market hours",
+    context: {
+      market: ["COMEX copper futures", "LME warehouse stocks", "China PMI data", "Chile/Peru production", "Green transition demand forecasts"],
+      strategy: "Dual Moving Average Crossover | Fast: 10 | Slow: 30 | ADX filter > 25 | Trail: 2 ATR",
+      risk: ["Max drawdown: 15%", "Single trade risk: 1.5%", "No leverage > 3x", "Pause during Chinese holidays"],
+      memory: ["China PMI below 50 = reduce exposure immediately", "LME warehouse drawdowns precede rallies by 2-3 days", "Stopped due to sideways market — awaiting trend confirmation"],
+    },
     dailyPnl: 0,
     totalPnl: 15800,
     cumulativeValue: 42300,
@@ -164,8 +297,32 @@ export const agentsData = [
   {
     id: "agent-005",
     name: "Wheat Seasonal",
+    role: "Agricultural Specialist",
+    avatar: "🌾",
     asset: "ZW (Wheat)",
-    status: "running" as const,
+    status: "running",
+    personality: "Seasonal pattern expert. Combines fundamental crop data with statistical seasonality for high win-rate trades.",
+    rules: [
+      "Max position size: 1.5% of portfolio",
+      "Only trade during seasonal windows",
+      "Exit before WASDE report if P&L > target",
+      "Max holding period: 21 days",
+    ],
+    skills: ["Seasonal Analysis", "WASDE Report Parsing", "Crop Progress Monitoring", "Pattern Recognition", "Export Flow Tracking"],
+    schedule: [
+      { label: "Crop progress check", time: "07:00 ET" },
+      { label: "Export inspection data", time: "08:00 ET (Mon)" },
+      { label: "Active trading", time: "09:30–13:15 ET" },
+      { label: "WASDE positioning", time: "11:30 ET (report days)" },
+      { label: "Weekly seasonal review", time: "Fri 14:00 ET" },
+    ],
+    heartbeatPattern: "Every 120 seconds during market hours",
+    context: {
+      market: ["CBOT wheat futures", "USDA WASDE reports", "Crop progress reports", "Export inspections", "Black Sea shipping data"],
+      strategy: "Seasonal Pattern + RSI Filter | Window: Mar-May, Aug-Oct | RSI < 30 entry | 21-day max hold",
+      risk: ["Max drawdown: 7.8%", "No position during WASDE release hour", "Weather event override: flatten if drought/flood", "Max 2 concurrent positions"],
+      memory: ["Spring rally pattern strongest in planting delay years", "WASDE surprises cause 3-5% moves — stay flat", "Black Sea export disruptions = immediate long bias"],
+    },
     dailyPnl: 890,
     totalPnl: 8450,
     cumulativeValue: 28900,
@@ -181,8 +338,32 @@ export const agentsData = [
   {
     id: "agent-006",
     name: "Silver 0DTE Options",
+    role: "Options Volatility Expert",
+    avatar: "⚡",
     asset: "SI (Silver)",
-    status: "running" as const,
+    status: "running",
+    personality: "Aggressive options trader. Exploits short-dated volatility mispricing with precise gamma management.",
+    rules: [
+      "Max notional: 5% of portfolio",
+      "Delta-neutral at all times (±0.05)",
+      "Close all positions by 15:45 ET",
+      "No new trades if VIX > 35",
+    ],
+    skills: ["Options Pricing", "Greeks Management", "Gamma Scalping", "Volatility Surface Analysis", "Dealer Positioning Intel"],
+    schedule: [
+      { label: "Vol surface analysis", time: "08:00 ET" },
+      { label: "Structure selection", time: "09:15 ET" },
+      { label: "Active gamma scalping", time: "09:30–15:30 ET" },
+      { label: "Position unwind", time: "15:30–15:45 ET" },
+      { label: "P&L attribution", time: "16:00 ET" },
+    ],
+    heartbeatPattern: "Every 10 seconds during market hours",
+    context: {
+      market: ["COMEX silver options chain", "Implied vol surface", "Dealer gamma exposure (GEX)", "Silver ETF flows (SLV)", "Skew dynamics"],
+      strategy: "0DTE Iron Condor with Delta Hedge | Wings: 1σ | Gamma scalp threshold: 0.02δ | Unwind T-15min",
+      risk: ["Max drawdown: 22%", "Pin risk management: close if within 0.5% of strike", "No positions into Fed speakers", "Gamma limit: $500/1% move"],
+      memory: ["Tuesday/Thursday have best vol premium", "Avoid silver during gold FOMC reactions", "Dealer positioning flips at $25 strike = key level"],
+    },
     dailyPnl: 2150,
     totalPnl: 19300,
     cumulativeValue: 56200,
@@ -330,7 +511,7 @@ export const strategyLibrary = [
   },
 ];
 
-// Dashboard overview metrics (v2 — agents, not bots)
+// Dashboard overview metrics
 export const dashboardMetrics = {
   totalPnl: 145600,
   dailyPnl: 10850,
@@ -351,7 +532,7 @@ export const portfolioAllocation = [
   { name: "Others", value: 10, color: "oklch(0.6 0.015 250)" },
 ];
 
-// Recent activity feed (v2 — agent terminology)
+// Recent activity feed
 export const recentActivity = [
   { id: 1, type: "trade", message: "Alpha Crude Momentum agent executed BUY CL @ $72.85", time: "2 min ago" },
   { id: 2, type: "agent", message: "NatGas Volatility agent heartbeat confirmed", time: "5 min ago" },
@@ -379,7 +560,7 @@ export const dailyPnlData = (() => {
 })();
 
 // ============================================================
-// NEW v2: Outcome Billing & Attribution Data
+// OUTCOME BILLING & ATTRIBUTION DATA
 // ============================================================
 
 export const currentPlan = {
@@ -388,8 +569,8 @@ export const currentPlan = {
   agentsIncluded: 10,
   agentsActive: 5,
   additionalAgentCost: 29,
-  performanceFeeRate: 0.10, // 10%
-  optimizationCreditsTotal: -1, // unlimited
+  performanceFeeRate: 0.10,
+  optimizationCreditsTotal: -1,
   optimizationCreditsUsed: 47,
 };
 
@@ -398,18 +579,12 @@ export const billingData = {
   billingCycleStart: "2026-05-01",
   billingCycleEnd: "2026-05-31",
   daysRemaining: 30,
-  // Value generated by agents this month
   totalValueGenerated: 145600,
-  // Performance fees accrued (10% of P&L)
   performanceFeesAccrued: 14560,
-  // Platform access fee
   accessFee: 199,
-  // Total estimated bill
   estimatedBill: 14759,
-  // Credits
   creditsUsed: 47,
-  creditsRemaining: -1, // unlimited for Full AETHER
-  // Historical billing
+  creditsRemaining: -1,
   previousMonths: [
     { month: "Apr 2026", valueGenerated: 128400, performanceFee: 12840, accessFee: 199, total: 13039 },
     { month: "Mar 2026", valueGenerated: 98200, performanceFee: 9820, accessFee: 199, total: 10019 },
@@ -418,7 +593,6 @@ export const billingData = {
   ],
 };
 
-// Per-agent value attribution for billing
 export const agentAttribution = [
   { agentId: "agent-001", name: "Alpha Crude Momentum", valueGenerated: 48750, performanceFee: 4875, tradesExecuted: 156, roi: 34.2 },
   { agentId: "agent-002", name: "Gold Spread Arb", valueGenerated: 31200, performanceFee: 3120, tradesExecuted: 89, roi: 22.8 },
@@ -428,7 +602,6 @@ export const agentAttribution = [
   { agentId: "agent-006", name: "Silver 0DTE Options", valueGenerated: 19300, performanceFee: 1930, tradesExecuted: 312, roi: 28.1 },
 ];
 
-// Value vs Cost comparison data (monthly)
 export const valueVsCostData = [
   { month: "Jan", valueGenerated: 54800, costPaid: 5679, ratio: 9.65 },
   { month: "Feb", valueGenerated: 72100, costPaid: 7409, ratio: 9.73 },
@@ -437,7 +610,6 @@ export const valueVsCostData = [
   { month: "May*", valueGenerated: 145600, costPaid: 14759, ratio: 9.86 },
 ];
 
-// Pricing tiers for display
 export const pricingTiers = [
   {
     name: "Intelligence Feed",
@@ -468,3 +640,118 @@ export const pricingTiers = [
     current: true,
   },
 ];
+
+// ============================================================
+// SKILL CHAINING PIPELINE
+// ============================================================
+
+export const skillPipeline = [
+  { id: 1, name: "Extract", description: "Parse trading ideas from text, video, PDF, or code", icon: "📥", status: "complete" as const },
+  { id: 2, name: "Analyze", description: "Domain intelligence validates idea feasibility", icon: "🔍", status: "complete" as const },
+  { id: 3, name: "Backtest", description: "Run against 10+ years of institutional data", icon: "📊", status: "complete" as const },
+  { id: 4, name: "Optimize", description: "AI-driven parameter search for best performance", icon: "⚙️", status: "complete" as const },
+  { id: 5, name: "Deploy", description: "Launch as autonomous trading agent", icon: "🚀", status: "active" as const },
+  { id: 6, name: "Monitor", description: "Real-time risk overlay and heartbeat tracking", icon: "👁️", status: "active" as const },
+  { id: 7, name: "Report", description: "P&L attribution and outcome billing", icon: "📋", status: "active" as const },
+];
+
+// ============================================================
+// DAILY OPERATIONS TIMELINE
+// ============================================================
+
+export const dailyTimeline = [
+  {
+    time: "05:00–06:00 ET",
+    phase: "Pre-Market Intelligence",
+    description: "Agents scan overnight developments, weather data, Asian session activity, and news feeds.",
+    agents: ["Alpha Crude Momentum", "Gold Spread Arb", "NatGas Volatility"],
+    color: "oklch(0.7 0.12 250)",
+  },
+  {
+    time: "06:00–09:15 ET",
+    phase: "Strategy Preparation",
+    description: "Signal generation, position review, risk parameter updates, and order staging.",
+    agents: ["All Active Agents"],
+    color: "oklch(0.75 0.15 80)",
+  },
+  {
+    time: "09:15–09:30 ET",
+    phase: "Market Open Positioning",
+    description: "Final pre-open checks, order queue verification, and opening auction participation.",
+    agents: ["Alpha Crude Momentum", "NatGas Volatility", "Silver 0DTE Options"],
+    color: "oklch(0.82 0.15 195)",
+  },
+  {
+    time: "09:30–12:00 ET",
+    phase: "Active Trading — Morning Session",
+    description: "Primary execution window. Agents trade signals, manage positions, and scalp gamma.",
+    agents: ["All Active Agents"],
+    color: "oklch(0.82 0.19 160)",
+  },
+  {
+    time: "12:00–14:00 ET",
+    phase: "Midday Assessment",
+    description: "P&L check, position adjustment, risk rebalancing, and afternoon strategy selection.",
+    agents: ["Gold Spread Arb", "Wheat Seasonal", "Copper Trend Follow"],
+    color: "oklch(0.82 0.15 195)",
+  },
+  {
+    time: "14:00–15:30 ET",
+    phase: "Active Trading — Afternoon Session",
+    description: "Second execution window. Options unwind, spread convergence, and momentum continuation.",
+    agents: ["Silver 0DTE Options", "Alpha Crude Momentum", "NatGas Volatility"],
+    color: "oklch(0.82 0.19 160)",
+  },
+  {
+    time: "15:30–16:00 ET",
+    phase: "End of Day Reconciliation",
+    description: "Close intraday positions, reconcile fills, calculate daily P&L, update agent memory.",
+    agents: ["All Active Agents"],
+    color: "oklch(0.75 0.15 80)",
+  },
+  {
+    time: "16:00–20:00 ET",
+    phase: "Post-Market Analysis",
+    description: "Strategy optimization, backtest new ideas, risk report generation, next-day preparation.",
+    agents: ["Alpha Crude Momentum", "NatGas Volatility"],
+    color: "oklch(0.7 0.12 250)",
+  },
+];
+
+// ============================================================
+// COMPOUNDING VALUE DATA (Week 1 to Week 8+)
+// ============================================================
+
+export const compoundingData = [
+  { week: "Week 1", value: 8200, trades: 45, winRate: 55, improvement: "Baseline" },
+  { week: "Week 2", value: 18500, trades: 62, winRate: 58, improvement: "Learned market microstructure" },
+  { week: "Week 3", value: 31200, trades: 78, winRate: 61, improvement: "Optimized entry timing" },
+  { week: "Week 4", value: 48900, trades: 95, winRate: 64, improvement: "Reduced false signals" },
+  { week: "Week 5", value: 72400, trades: 112, winRate: 66, improvement: "Better risk sizing" },
+  { week: "Week 6", value: 98700, trades: 128, winRate: 67, improvement: "Cross-agent correlation" },
+  { week: "Week 7", value: 121300, trades: 141, winRate: 68, improvement: "Memory-driven exits" },
+  { week: "Week 8+", value: 145600, trades: 156, winRate: 69, improvement: "Compound intelligence" },
+];
+
+// ============================================================
+// BEFORE vs AFTER COMPARISON
+// ============================================================
+
+export const beforeAfterData = {
+  before: [
+    { metric: "Backtest Time", value: "2–3 days", icon: "⏱️" },
+    { metric: "Strategy Ideas/Month", value: "3–5", icon: "💡" },
+    { metric: "Execution Speed", value: "Minutes (manual)", icon: "🐌" },
+    { metric: "Market Coverage", value: "1–2 commodities", icon: "📉" },
+    { metric: "Operating Hours", value: "8 hrs/day", icon: "🕐" },
+    { metric: "Monthly Cost", value: "$15,000+ (analyst team)", icon: "💸" },
+  ],
+  after: [
+    { metric: "Backtest Time", value: "< 30 seconds", icon: "⚡" },
+    { metric: "Strategy Ideas/Month", value: "50+ (AI-generated)", icon: "🧠" },
+    { metric: "Execution Speed", value: "Milliseconds (automated)", icon: "🚀" },
+    { metric: "Market Coverage", value: "6+ commodities 24/7", icon: "🌍" },
+    { metric: "Operating Hours", value: "24/7 autonomous", icon: "♾️" },
+    { metric: "Monthly Cost", value: "$199 + 10% of profits", icon: "✅" },
+  ],
+};

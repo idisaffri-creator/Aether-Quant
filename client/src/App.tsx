@@ -12,6 +12,8 @@ import AgentWorkforce from "./pages/AgentWorkforce";
 import OutcomeBilling from "./pages/OutcomeBilling";
 import StrategyLibrary from "./pages/StrategyLibrary";
 import Dashboard from "./pages/Dashboard";
+import AgentTeam from "./pages/AgentTeam";
+import Pipeline from "./pages/Pipeline";
 
 function Router() {
   return (
@@ -22,6 +24,8 @@ function Router() {
         <Route path="/backtest" component={BacktestResults} />
         <Route path="/optimization" component={Optimization} />
         <Route path="/agents" component={AgentWorkforce} />
+        <Route path="/team" component={AgentTeam} />
+        <Route path="/pipeline" component={Pipeline} />
         <Route path="/billing" component={OutcomeBilling} />
         <Route path="/library" component={StrategyLibrary} />
         <Route path="/404" component={NotFound} />

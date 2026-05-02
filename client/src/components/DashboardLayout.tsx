@@ -21,6 +21,8 @@ import {
   Zap,
   Receipt,
   Crown,
+  UserCircle,
+  GitBranch,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +39,8 @@ const navItems = [
   { path: "/backtest", label: "Backtest", icon: BarChart3 },
   { path: "/optimization", label: "Optimization", icon: Settings2 },
   { path: "/agents", label: "Agent Workforce", icon: Users },
+  { path: "/team", label: "Agent Team", icon: UserCircle },
+  { path: "/pipeline", label: "Pipeline & Ops", icon: GitBranch },
   { path: "/billing", label: "Outcome Billing", icon: Receipt },
   { path: "/library", label: "Strategy Library", icon: Library },
 ];
