@@ -5,7 +5,7 @@
    ============================================================ */
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Zap, LayoutDashboard } from "lucide-react";
+import { Menu, X, LayoutDashboard } from "lucide-react";
 import { useLocation } from "wouter";
 import { getAuthToken } from "@/lib/api";
 
@@ -55,12 +55,7 @@ export default function Navbar() {
             className="flex items-center gap-2.5 group"
             onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); }}
           >
-            <div className="w-8 h-8 rounded-lg bg-amber/20 border border-amber/40 flex items-center justify-center group-hover:bg-amber/30 transition-colors">
-              <Zap className="w-4 h-4 text-amber" fill="currentColor" />
-            </div>
-            <span className="font-display text-lg font-600 text-white tracking-tight">
-              AETHER<span className="text-amber">.</span>
-            </span>
+            <img src="/logo.png" alt="Aether Energy" className="h-8 w-auto" />
           </a>
 
           {/* Desktop Nav */}

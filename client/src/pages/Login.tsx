@@ -43,12 +43,7 @@ export default function Login() {
     <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
       <div className="w-full max-w-sm space-y-6">
         <button onClick={() => setLocation("/")} className="flex items-center gap-2 mx-auto mb-8">
-          <div className="w-8 h-8 rounded-lg bg-amber/20 border border-amber/40 flex items-center justify-center">
-            <Zap className="w-4 h-4 text-amber" fill="currentColor" />
-          </div>
-          <span className="font-display text-lg font-bold">
-            AETHER<span className="text-amber">.</span>
-          </span>
+          <img src="/logo.png" alt="Aether Energy" className="h-8 w-auto" />
         </button>
 
         <div className="glass-card rounded-xl p-6 space-y-5">

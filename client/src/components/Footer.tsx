@@ -3,7 +3,7 @@
    Design: Elemental Precision — Dark footer with links,
    legal, and amber accent
    ============================================================ */
-import { Zap, Twitter, Linkedin, Github } from "lucide-react";
+import { Twitter, Linkedin, Github } from "lucide-react";
 import { toast } from "sonner";
 
 const footerLinks = {
@@ -47,13 +47,8 @@ export default function Footer() {
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-8 mb-16">
           {/* Brand */}
           <div className="col-span-2">
-            <div className="flex items-center gap-2.5 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-amber/20 border border-amber/40 flex items-center justify-center">
-                <Zap className="w-4 h-4 text-amber" fill="currentColor" />
-              </div>
-              <span className="font-display text-lg font-600 text-white tracking-tight">
-                AETHER<span className="text-amber">.</span>
-              </span>
+              <div className="flex items-center gap-2.5 mb-4">
+              <img src="/logo.png" alt="Aether Energy" className="h-8 w-auto" />
             </div>
             <p className="text-white/45 text-sm leading-relaxed max-w-xs mb-6">
               The element of intelligent oil trading. AI-powered no-code strategies
