@@ -7,6 +7,8 @@
 import { useState, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
+import { AgentChat } from "@/components/agents/AgentChat";
+import NotificationBell from "@/components/NotificationBell";
 import {
   LayoutDashboard,
   Lightbulb,
@@ -310,13 +312,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             </Badge>
 
             {/* Notifications */}
-            <button
-              onClick={() => toast.info("No new notifications")}
-              className="relative p-2 rounded-lg hover:bg-accent transition-colors"
-            >
-              <Bell className="w-4 h-4 text-muted-foreground" />
-              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-primary" />
-            </button>
+            <NotificationBell />
 
             {/* User avatar */}
             <Avatar className="w-8 h-8 border border-border">
@@ -343,6 +339,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           </AnimatePresence>
         </main>
       </div>
+      <AgentChat />
     </div>
   );
 }
