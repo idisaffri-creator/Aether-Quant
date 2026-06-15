@@ -10,13 +10,12 @@ import { useLocation } from "wouter";
 import { getAuthToken } from "@/lib/api";
 
 const navLinks = [
-  { label: "Platform", href: "#platform" },
-  { label: "Features", href: "#features" },
-  { label: "Monte Carlo", href: "#monte-carlo" },
   { label: "Terminal", href: "#terminal" },
+  { label: "Monte Carlo", href: "#monte-carlo" },
+  { label: "Features", href: "#features" },
+  { label: "Platform", href: "#platform" },
   { label: "Pricing", href: "#pricing" },
   { label: "Roadmap", href: "#roadmap" },
-  { label: "About", href: "#about" },
 ];
 
 export default function Navbar() {
