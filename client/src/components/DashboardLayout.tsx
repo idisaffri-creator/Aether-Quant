@@ -42,27 +42,27 @@ import {
 import { toast } from "sonner";
 
 const mainNav = [
-  { path: "/", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/extractor", label: "Idea Extractor", icon: Lightbulb },
-  { path: "/backtest", label: "Backtest", icon: BarChart3 },
-  { path: "/optimization", label: "Optimization", icon: Settings2 },
-  { path: "/agents", label: "Agent Workforce", icon: Users },
-  { path: "/team", label: "Agent Team", icon: UserCircle },
-  { path: "/pipeline", label: "Pipeline & Ops", icon: GitBranch },
-  { path: "/billing", label: "Outcome Billing", icon: Receipt },
-  { path: "/library", label: "Strategy Library", icon: Library },
+  { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { path: "/dashboard/extractor", label: "Idea Extractor", icon: Lightbulb },
+  { path: "/dashboard/backtest", label: "Backtest", icon: BarChart3 },
+  { path: "/dashboard/optimization", label: "Optimization", icon: Settings2 },
+  { path: "/dashboard/agents", label: "Agent Workforce", icon: Users },
+  { path: "/dashboard/team", label: "Agent Team", icon: UserCircle },
+  { path: "/dashboard/pipeline", label: "Pipeline & Ops", icon: GitBranch },
+  { path: "/dashboard/billing", label: "Outcome Billing", icon: Receipt },
+  { path: "/dashboard/library", label: "Strategy Library", icon: Library },
 ];
 
 const tradingNav = [
-  { path: "/overview", label: "Overview", icon: LayoutDashboard },
-  { path: "/trade", label: "Trade", icon: TrendingUp },
-  { path: "/portfolio", label: "Portfolio", icon: PieChartIcon },
-  { path: "/strategies", label: "Strategies", icon: Brain },
-  { path: "/analysis", label: "Analysis", icon: BarChart3 },
-  { path: "/intelligence", label: "Intelligence", icon: Activity },
-  { path: "/mail", label: "Mail", icon: Mail },
-  { path: "/audit", label: "Audit Trail", icon: Shield },
-  { path: "/settings", label: "Settings", icon: SettingsIcon },
+  { path: "/dashboard/overview", label: "Overview", icon: LayoutDashboard },
+  { path: "/dashboard/trade", label: "Trade", icon: TrendingUp },
+  { path: "/dashboard/portfolio", label: "Portfolio", icon: PieChartIcon },
+  { path: "/dashboard/strategies", label: "Strategies", icon: Brain },
+  { path: "/dashboard/analysis", label: "Analysis", icon: BarChart3 },
+  { path: "/dashboard/intelligence", label: "Intelligence", icon: Activity },
+  { path: "/dashboard/mail", label: "Mail", icon: Mail },
+  { path: "/dashboard/audit", label: "Audit Trail", icon: Shield },
+  { path: "/dashboard/settings", label: "Settings", icon: SettingsIcon },
 ];
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {

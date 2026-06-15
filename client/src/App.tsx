@@ -45,30 +45,30 @@ function DashboardLoader() {
 function Router() {
   return (
     <Switch>
-      <Route path="/home" component={Home} />
-      <Route>
+      <Route path="/" component={Home} />
+      <Route path="/dashboard">
         <DashboardLayout>
           <Suspense fallback={<DashboardLoader />}>
             <Switch>
-              <Route path="/" component={Dashboard} />
-              <Route path="/extractor" component={IdeaExtractor} />
-              <Route path="/backtest" component={BacktestResults} />
-              <Route path="/optimization" component={Optimization} />
-              <Route path="/agents" component={AgentWorkforce} />
-              <Route path="/team" component={AgentTeam} />
-              <Route path="/pipeline" component={Pipeline} />
-              <Route path="/billing" component={OutcomeBilling} />
-              <Route path="/library" component={StrategyLibrary} />
-              <Route path="/overview" component={Overview} />
-              <Route path="/trade" component={Trade} />
-              <Route path="/portfolio" component={Portfolio} />
-              <Route path="/strategies" component={Strategies} />
-              <Route path="/analysis" component={Analysis} />
-              <Route path="/intelligence" component={Intelligence} />
-              <Route path="/mail" component={Mail} />
-              <Route path="/audit" component={Audit} />
-              <Route path="/settings" component={Settings} />
-              <Route path="/404" component={NotFound} />
+              <Route path="/dashboard" component={Dashboard} />
+              <Route path="/dashboard/extractor" component={IdeaExtractor} />
+              <Route path="/dashboard/backtest" component={BacktestResults} />
+              <Route path="/dashboard/optimization" component={Optimization} />
+              <Route path="/dashboard/agents" component={AgentWorkforce} />
+              <Route path="/dashboard/team" component={AgentTeam} />
+              <Route path="/dashboard/pipeline" component={Pipeline} />
+              <Route path="/dashboard/billing" component={OutcomeBilling} />
+              <Route path="/dashboard/library" component={StrategyLibrary} />
+              <Route path="/dashboard/overview" component={Overview} />
+              <Route path="/dashboard/trade" component={Trade} />
+              <Route path="/dashboard/portfolio" component={Portfolio} />
+              <Route path="/dashboard/strategies" component={Strategies} />
+              <Route path="/dashboard/analysis" component={Analysis} />
+              <Route path="/dashboard/intelligence" component={Intelligence} />
+              <Route path="/dashboard/mail" component={Mail} />
+              <Route path="/dashboard/audit" component={Audit} />
+              <Route path="/dashboard/settings" component={Settings} />
+              <Route path="/dashboard/404" component={NotFound} />
               <Route component={NotFound} />
             </Switch>
           </Suspense>
