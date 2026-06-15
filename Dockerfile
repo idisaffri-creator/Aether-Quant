@@ -2,8 +2,8 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@10 --activate
 COPY package.json pnpm-lock.yaml ./
-COPY patches/ ./patches/ || true
-RUN pnpm install --frozen-lockfile
+COPY patches ./patches/
+RUN if [ -d patches ]; then pnpm install --frozen-lockfile; else pnpm install; fi
 COPY . .
 RUN pnpm build
 

@@ -1,0 +1,44 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: aether-postgres
+    restart: unless-stopped
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: aether_energy
+      POSTGRES_USER: aether
+      POSTGRES_PASSWORD: aether_pass
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aether -d aether_energy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sh4dow-net
+
+  app:
+    build: .
+    container_name: aether-energy
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.aether.rule=Host(`aether-energy.ai`) || Host(`www.aether-energy.ai`)"
+      - "traefik.http.routers.aether.entrypoints=websecure"
+      - "traefik.http.routers.aether.tls.certResolver=letsencrypt"
+      - "traefik.http.services.aether.loadbalancer.server.port=3000"
+    networks:
+      - sh4dow-net
+
+volumes:
+  pgdata:
+
+networks:
+  sh4dow-net:
+    external: true
