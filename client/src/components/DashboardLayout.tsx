@@ -23,6 +23,12 @@ import {
   Crown,
   UserCircle,
   GitBranch,
+  TrendingUp,
+  PieChart as PieChartIcon,
+  Brain,
+  Mail,
+  Shield,
+  Settings as SettingsIcon,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -33,7 +39,7 @@ import {
 } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 
-const navItems = [
+const mainNav = [
   { path: "/", label: "Dashboard", icon: LayoutDashboard },
   { path: "/extractor", label: "Idea Extractor", icon: Lightbulb },
   { path: "/backtest", label: "Backtest", icon: BarChart3 },
@@ -43,6 +49,18 @@ const navItems = [
   { path: "/pipeline", label: "Pipeline & Ops", icon: GitBranch },
   { path: "/billing", label: "Outcome Billing", icon: Receipt },
   { path: "/library", label: "Strategy Library", icon: Library },
+];
+
+const tradingNav = [
+  { path: "/overview", label: "Overview", icon: LayoutDashboard },
+  { path: "/trade", label: "Trade", icon: TrendingUp },
+  { path: "/portfolio", label: "Portfolio", icon: PieChartIcon },
+  { path: "/strategies", label: "Strategies", icon: Brain },
+  { path: "/analysis", label: "Analysis", icon: BarChart3 },
+  { path: "/intelligence", label: "Intelligence", icon: Activity },
+  { path: "/mail", label: "Mail", icon: Mail },
+  { path: "/audit", label: "Audit Trail", icon: Shield },
+  { path: "/settings", label: "Settings", icon: SettingsIcon },
 ];
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
@@ -84,7 +102,81 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
         {/* Navigation */}
         <nav className="flex-1 py-3 px-2 space-y-1 overflow-y-auto">
-          {navItems.map((item) => {
+          <AnimatePresence>
+            {!collapsed && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider px-3 pb-1"
+              >
+                Aether Quant
+              </motion.div>
+            )}
+          </AnimatePresence>
+          {mainNav.map((item) => {
+            const isActive = location === item.path;
+            const Icon = item.icon;
+            return (
+              <Tooltip key={item.path} delayDuration={collapsed ? 100 : 1000}>
+                <TooltipTrigger asChild>
+                  <Link href={item.path}>
+                    <motion.div
+                      className={`
+                        flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors relative
+                        ${isActive
+                          ? "bg-primary/10 text-primary"
+                          : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                        }
+                      `}
+                      whileHover={{ x: 2 }}
+                      transition={{ duration: 0.1 }}
+                    >
+                      {isActive && (
+                        <motion.div
+                          layoutId="sidebar-active"
+                          className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-primary rounded-r"
+                          transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                        />
+                      )}
+                      <Icon className="w-4.5 h-4.5 shrink-0" />
+                      <AnimatePresence>
+                        {!collapsed && (
+                          <motion.span
+                            initial={{ opacity: 0, width: 0 }}
+                            animate={{ opacity: 1, width: "auto" }}
+                            exit={{ opacity: 0, width: 0 }}
+                            transition={{ duration: 0.15 }}
+                            className="overflow-hidden whitespace-nowrap"
+                          >
+                            {item.label}
+                          </motion.span>
+                        )}
+                      </AnimatePresence>
+                    </motion.div>
+                  </Link>
+                </TooltipTrigger>
+                {collapsed && (
+                  <TooltipContent side="right" sideOffset={8}>
+                    {item.label}
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            );
+          })}
+          <AnimatePresence>
+            {!collapsed && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider px-3 pt-3 pb-1"
+              >
+                Aether Energy
+              </motion.div>
+            )}
+          </AnimatePresence>
+          {tradingNav.map((item) => {
             const isActive = location === item.path;
             const Icon = item.icon;
             return (
@@ -188,7 +280,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-3">
             <Activity className="w-4 h-4 text-primary" />
             <span className="font-display font-semibold text-sm text-foreground">
-              {navItems.find((n) => n.path === location)?.label || "Dashboard"}
+              {[...mainNav, ...tradingNav].find((n) => n.path === location)?.label || "Dashboard"}
             </span>
             <Badge
               variant="outline"
