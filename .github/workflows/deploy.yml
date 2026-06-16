@@ -1,37 +1,26 @@
-name: Deploy Aether Energy
+name: Deploy VPS
 
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
+    paths-ignore:
+      - "**/*.md"
+      - ".github/**"
 
 jobs:
-  check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: "pnpm"
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm check
-      - run: pnpm build
-
   deploy:
-    needs: check
-    if: github.ref == 'refs/heads/main'
+    name: Pull · Build · Reload
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Build Docker image
-        run: docker build -t aether-energy .
-      - name: Deploy to VPS
-        env:
-          SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-        run: |
-          echo "$SSH_KEY" > key.pem && chmod 600 key.pem
-          docker save aether-energy | ssh -i key.pem -o StrictHostKeyChecking=no root@$VPS_HOST "docker load && docker compose up -d"
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd /root/aether-energy
+            ./deploy.sh
+            sleep 3
+            pm2 status aether
+            curl -sS -o /dev/null -w "health=%{http_code}\n" http://127.0.0.1:3000/ready

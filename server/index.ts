@@ -10,7 +10,14 @@ import cookieParser from "cookie-parser";
 import { generalLimiter as rateLimit } from "./middleware/rateLimit";
 import { auditLogger } from "./middleware/auditLog";
 import { securityHeaders } from "./middleware/security";
+import { requestId } from "./middleware/requestId";
+import { requestLogger } from "./middleware/requestLogger";
+import { idempotency } from "./middleware/idempotency";
+import { installShutdown, shutdownMiddleware } from "./lib/shutdown";
+import { logger } from "./lib/logger";
 import authRoutes from "./routes/auth";
+import auth2faRoutes from "./routes/auth2fa";
+import gdprRoutes from "./routes/gdpr";
 import oauthRoutes from "./routes/oauth";
 import marketRoutes from "./routes/market";
 import agentRoutes from "./routes/agents";
@@ -19,28 +26,39 @@ import benchmarkRoutes from "./routes/benchmark";
 import optimizeRoutes from "./routes/optimize";
 import mailRoutes from "./routes/mail";
 import notificationRoutes from "./routes/notifications";
-import auditRoutes from "./routes/audit";
+import auditQueryRoutes from "./routes/auditQuery";
+import healthRoutes from "./routes/health";
 import adminMailRoutes from "./routes/adminMail";
 import adminUsersRoutes from "./routes/adminUsers";
 import { setupWebSocket } from "./ws/index";
 import { runMigrations } from "./db";
+import "./lib/redis"; // init redis client at startup
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const REQUIRED_ENV = ["DATABASE_URL", "JWT_SECRET"];
-const OPTIONAL_ENV = ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GITHUB_CLIENT_ID", "GITHUB_CLIENT_SECRET", "PORT", "CORS_ORIGIN"];
+const OPTIONAL_ENV = [
+  "PORT", "CORS_ORIGIN", "LOG_LEVEL", "REDIS_URL", "TRUST_PROXY",
+  "SENTRY_DSN", "ALLOW_REGISTRATION",
+];
+
+function parseCors(): string | string[] {
+  const v = process.env.CORS_ORIGIN;
+  if (!v || v === "*") return "*";
+  return v.split(",").map((s) => s.trim()).filter(Boolean);
+}
 
 function validateEnv() {
   const missing = REQUIRED_ENV.filter((key) => !process.env[key]);
   if (missing.length > 0) {
-    console.warn(`Missing required env vars: ${missing.join(", ")}`);
+    logger.warn({ missing }, "Missing required env vars");
     if (missing.includes("JWT_SECRET")) {
       process.env.JWT_SECRET = "aether-dev-secret-change-in-production";
-      console.warn("Using fallback JWT_SECRET — set a real secret in production");
+      logger.warn("Using fallback JWT_SECRET — set a real secret in production");
     }
   }
-  console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
+  logger.info({ env: process.env.NODE_ENV || "development" }, "env validated");
 }
 
 async function startServer() {
@@ -48,24 +66,72 @@ async function startServer() {
   await runMigrations();
   const app = express();
   const server = createServer(app);
+  app.set("trust proxy", process.env.TRUST_PROXY ? parseInt(process.env.TRUST_PROXY) : 1);
 
-  // Security & parsing
-  app.use(helmet({ contentSecurityPolicy: false }));
+  // ─── Observability first (so even errors get logged) ─────────────────
+  app.use(requestId);
+  app.use(requestLogger);
+  app.use(shutdownMiddleware);
+
+  // ─── Security headers (strict CSP, HSTS, COOP/COEP) ─────────────────
+  const cspReportOnly = process.env.CSP_REPORT_ONLY === "true";
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        useDefaults: true,
+        directives: {
+          "default-src": ["'self'"],
+          "script-src": ["'self'", "'unsafe-inline'"], // Vite injects inline
+          "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+          "font-src": ["'self'", "https://fonts.gstatic.com", "data:"],
+          "img-src": ["'self'", "data:", "blob:", "https:"],
+          "connect-src": ["'self'", "https://aether-energy.ai", "wss://aether-energy.ai", "https://api.aether-energy.ai"],
+          "frame-ancestors": ["'none'"],
+          "form-action": ["'self'"],
+          "base-uri": ["'self'"],
+          "report-uri": ["/api/csp-report"],
+        },
+        reportOnly: cspReportOnly,
+      },
+      hsts: {
+        maxAge: 63072000, // 2 years (HSTS preload eligibility)
+        includeSubDomains: true,
+        preload: true,
+      },
+      crossOriginEmbedderPolicy: false, // we serve <img> cross-origin
+      crossOriginOpenerPolicy: { policy: "same-origin" },
+      crossOriginResourcePolicy: { policy: "cross-origin" },
+      referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+      permittedCrossDomainPolicies: false,
+    })
+  );
   app.use(securityHeaders);
-  app.use(cors({ origin: process.env.CORS_ORIGIN || "*", credentials: true }));
+  app.use(
+    cors({
+      origin: parseCors(),
+      credentials: true,
+      methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization", "X-Request-ID", "Idempotency-Key"],
+      exposedHeaders: ["X-Request-ID", "Idempotent-Replay"],
+      maxAge: 600,
+    })
+  );
   app.use(compression());
   app.use(express.json({ limit: "10kb" }));
   app.use(cookieParser());
+
+  // ─── Idempotency for all write endpoints ─────────────────────────────
+  app.use(idempotency);
+
+  // ─── Existing audit logger + rate limit ──────────────────────────────
   app.use(auditLogger);
   app.use(rateLimit);
 
-  // Health check
-  app.get("/api/health", (_req, res) => {
-    res.json({ status: "ok", timestamp: new Date().toISOString() });
-  });
-
-  // API routes
+  // ─── Routes ──────────────────────────────────────────────────────────
+  app.use("/", healthRoutes);
   app.use("/api/auth", authRoutes);
+  app.use("/api/auth/2fa", auth2faRoutes);
+  app.use("/api/auth/me", gdprRoutes); // /export, DELETE /
   app.use("/api/auth", oauthRoutes);
   app.use("/api/market", marketRoutes);
   app.use("/api/agents", agentRoutes);
@@ -74,17 +140,20 @@ async function startServer() {
   app.use("/api/optimize", optimizeRoutes);
   app.use("/api/mail", mailRoutes);
   app.use("/api/notifications", notificationRoutes);
-  app.use("/api/audit", auditRoutes);
+  app.use("/api/audit", auditQueryRoutes);
   app.use("/api/admin/mail", adminMailRoutes);
   app.use("/api/admin", adminUsersRoutes);
 
-  // WebSocket
-  setupWebSocket(server);
+  // CSP report collector
+  app.post("/api/csp-report", (req, res) => {
+    logger.warn({ csp: req.body }, "CSP violation reported");
+    res.status(204).end();
+  });
 
-  // Static files (production) with proper cache headers:
-  //   index.html   -> no-cache (always fetch latest, so new chunk hashes are picked up)
-  //   /assets/*    -> 1 year immutable (Vite hashes filenames, safe to cache forever)
-  //   other files  -> 1 hour cache
+  // ─── WebSocket ───────────────────────────────────────────────────────
+  const wss = setupWebSocket(server);
+
+  // ─── Static files with proper cache headers ─────────────────────────
   const staticPath =
     process.env.NODE_ENV === "production"
       ? path.resolve(__dirname, "public")
@@ -112,11 +181,16 @@ async function startServer() {
     res.sendFile(path.join(staticPath, "index.html"));
   });
 
-  const port = process.env.PORT || 3000;
+  // ─── Graceful shutdown ───────────────────────────────────────────────
+  installShutdown(server, wss);
 
+  const port = process.env.PORT || 3000;
   server.listen(port, () => {
-    console.log(`Aether Energy running on http://localhost:${port}/`);
+    logger.info({ port, pid: process.pid, node: process.version }, "Aether Energy started");
   });
 }
 
-startServer().catch(console.error);
+startServer().catch((err) => {
+  logger.fatal({ err: err.message, stack: err.stack }, "startup failed");
+  process.exit(1);
+});

@@ -116,3 +116,17 @@ export const benchmarkResults = pgTable("benchmark_results", {
   details: text("details"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+export const auditLog = pgTable("audit_log", {
+  id: text("id").primaryKey(),
+  userId: text("user_id"),
+  actorId: text("actor_id"),
+  action: text("action").notNull(),
+  resource: text("resource"),
+  resourceId: text("resource_id"),
+  ip: text("ip"),
+  userAgent: text("user_agent"),
+  meta: text("meta"),
+  requestId: text("request_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});

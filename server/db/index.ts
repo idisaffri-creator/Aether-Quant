@@ -17,12 +17,49 @@ export async function runMigrations(): Promise<void> {
   if (migrationsRan) return;
   migrationsRan = true;
   try {
+    // Users
     await client`ALTER TABLE users ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'active'`;
     await client`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified text NOT NULL DEFAULT 'false'`;
     await client`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at timestamp`;
     await client`ALTER TABLE users ADD COLUMN IF NOT EXISTS preferences jsonb NOT NULL DEFAULT '{}'::jsonb`;
     await client`CREATE UNIQUE INDEX IF NOT EXISTS users_username_lower_idx ON users (lower(username))`;
-    console.log("[db] Auto-migrations complete");
+
+    // Audit log table
+    await client`CREATE TABLE IF NOT EXISTS audit_log (
+      id text PRIMARY KEY,
+      user_id text,
+      actor_id text,
+      action text NOT NULL,
+      resource text,
+      resource_id text,
+      ip text,
+      user_agent text,
+      meta text,
+      request_id text,
+      created_at timestamp NOT NULL DEFAULT now()
+    )`;
+    await client`CREATE INDEX IF NOT EXISTS audit_log_user_idx ON audit_log (user_id, created_at DESC)`;
+    await client`CREATE INDEX IF NOT EXISTS audit_log_action_idx ON audit_log (action, created_at DESC)`;
+    await client`CREATE INDEX IF NOT EXISTS audit_log_created_idx ON audit_log (created_at DESC)`;
+
+    // Strategies hot-path indexes
+    await client`CREATE INDEX IF NOT EXISTS strategies_user_status_idx ON strategies (user_id, status)`;
+    await client`CREATE INDEX IF NOT EXISTS strategies_user_updated_idx ON strategies (user_id, updated_at DESC)`;
+
+    // Trades hot-path indexes
+    await client`CREATE INDEX IF NOT EXISTS trades_user_status_idx ON trades (user_id, status)`;
+    await client`CREATE INDEX IF NOT EXISTS trades_user_opened_idx ON trades (user_id, opened_at DESC)`;
+    await client`CREATE INDEX IF NOT EXISTS trades_strategy_idx ON trades (strategy_id)`;
+
+    // Notifications hot-path
+    await client`CREATE INDEX IF NOT EXISTS notifications_user_unread_idx ON notifications (user_id, read, created_at DESC)`;
+    await client`CREATE INDEX IF NOT EXISTS notifications_user_created_idx ON notifications (user_id, created_at DESC)`;
+
+    // Signals hot-path
+    await client`CREATE INDEX IF NOT EXISTS signals_user_ack_idx ON signals (user_id, acknowledged, created_at DESC)`;
+    await client`CREATE INDEX IF NOT EXISTS signals_symbol_idx ON signals (symbol, created_at DESC)`;
+
+    console.log("[db] Auto-migrations + indexes complete");
   } catch (err) {
     console.warn("[db] Auto-migrations skipped/failed (continuing):", (err as Error).message);
   }
