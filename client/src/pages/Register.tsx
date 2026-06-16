@@ -3,36 +3,41 @@ import { useLocation } from "wouter";
 import { Zap } from "lucide-react";
 import { usePageTitle } from "@/lib/usePageTitle";
 import { api, setAuthToken } from "@/lib/api";
+import { useSetAtom } from "jotai";
+import { tokenAtom, userAtom } from "@/store/auth";
+import { toast } from "sonner";
 
 export default function Register() {
   usePageTitle("Create Account");
   const [, setLocation] = useLocation();
+  const setToken = useSetAtom(tokenAtom);
+  const setUser = useSetAtom(userAtom);
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !username.trim() || !password.trim()) {
-      setError("All fields required");
+      toast.error("All fields required");
       return;
     }
     if (password.length < 6) {
-      setError("Password must be at least 6 characters");
+      toast.error("Password must be at least 6 characters");
       return;
     }
     setLoading(true);
-    setError("");
 
     try {
       const res = await api.auth.register({ email: email.trim(), username: username.trim(), password });
       setAuthToken(res.token);
-      localStorage.setItem("aether_email", res.user.email);
+      setToken(res.token);
+      setUser(res.user);
+      toast.success("Account created successfully!");
       setLocation("/dashboard");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Registration failed");
+    } catch (err: any) {
+      toast.error(err.message || "Registration failed");
     } finally {
       setLoading(false);
     }
@@ -82,12 +87,6 @@ export default function Register() {
                 className="w-full mt-1 px-3 py-2 rounded-lg bg-accent/50 border border-border text-sm focus:outline-none focus:border-amber/50"
               />
             </div>
-
-            {error && (
-              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-500">
-                {error}
-              </div>
-            )}
 
             <button
               type="submit"

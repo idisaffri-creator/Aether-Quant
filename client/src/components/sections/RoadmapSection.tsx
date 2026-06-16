@@ -8,51 +8,51 @@ import { CheckCircle2, Circle, Clock } from "lucide-react";
 
 const phases = [
   {
-    quarter: "Q1 2024",
-    label: "MVP Launch",
+    quarter: "2024",
+    label: "Foundation",
     status: "completed",
     items: [
-      "User authentication & onboarding",
-      "5 pre-built strategy templates",
-      "Paper trading with historical data",
-      "Basic dashboard & analytics",
-      "Educational content library",
+      "No-code strategy builder with visual canvas",
+      "Bloomberg-grade terminal UI with live market data",
+      "Monte Carlo simulation engine with 10,000 paths",
+      "Paper trading with historical data replay",
+      "50+ quant strategy templates",
     ],
   },
   {
-    quarter: "Q2 2024",
-    label: "Enhanced Features",
+    quarter: "H1 2025",
+    label: "Intelligence Layer",
     status: "completed",
     items: [
-      "Advanced AI strategy assistant",
-      "Real-time market data feeds",
-      "Enhanced risk management tools",
-      "Mobile-responsive design",
-      "Social trading features",
+      "Regime-adaptive AI optimisation engine",
+      "Real-time WTI/Brent data via Polygon.io",
+      "Multi-view terminal (market, news, movers, vol)",
+      "Advanced risk controls (VaR, drawdown circuit breakers)",
+      "Git-based strategy versioning",
     ],
   },
   {
-    quarter: "Q3 2024",
-    label: "Institutional Features",
+    quarter: "H2 2025",
+    label: "Institutional Grade",
+    status: "completed",
+    items: [
+      "Multi-user RBAC with granular permissions",
+      "Broker integration: Interactive Brokers, ICE, CME",
+      "Walk-forward optimisation to prevent overfitting",
+      "Geopolitical risk heatmap with sentiment scoring",
+      "Roadmap-driven development process",
+    ],
+  },
+  {
+    quarter: "2026",
+    label: "Scale & Connect",
     status: "active",
     items: [
-      "Multi-user management",
-      "Custom compliance rules",
-      "Advanced reporting suite",
-      "API access for power users",
-      "White-label solutions",
-    ],
-  },
-  {
-    quarter: "Q4 2024",
-    label: "Global Scale",
-    status: "upcoming",
-    items: [
-      "AI-powered hedge fund launch",
-      "Regulatory technology suite",
-      "Global compliance framework",
-      "Enterprise risk management",
-      "International expansion",
+      "Smart order routing across multiple venues",
+      "Custom compliance rules engine",
+      "API access for algorithmic clients",
+      "White-label terminal for energy funds",
+      "Execution quality analytics suite",
     ],
   },
 ];
@@ -101,12 +101,12 @@ export default function RoadmapSection() {
         <div className={`max-w-2xl mb-16 transition-all duration-700 ${inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
           <div className="section-number mb-3">07 — Roadmap</div>
           <h2 className="font-display text-4xl lg:text-5xl font-700 text-white leading-tight mb-4">
-            Building the Future of{" "}
-            <span className="text-amber-400">Oil Trading</span>
+            What We've Built,{" "}
+            <span className="text-amber-400">What's Next</span>
           </h2>
           <p className="text-white/55 text-lg leading-relaxed">
-            Our development roadmap is driven by trader feedback and market needs.
-            Here's where we've been and where we're going.
+            Our development is driven by actual energy trader feedback — not
+            boardroom theories. Here's where we've shipped and what's in the pipeline.
           </p>
         </div>
 

@@ -64,15 +64,155 @@ aether-quant/
 │   │   └── index.css                # Global styles + Void Terminal theme
 │   └── index.html                   # HTML template
 ├── server/
-│   └── index.ts                     # Express server (static file serving)
+│   ├── index.ts                     # Express API server + static file serving
+│   ├── routes/                      # API routes (auth, agents, trading, mail, etc.)
+│   ├── agents/                      # AI agent logic (signals, portfolio, risk)
+│   ├── middleware/                   # Auth, rate limiting, security, audit
+│   ├── db/                          # Database schema and connection (Drizzle)
+│   ├── services/                    # Technical analysis, market data
+│   └── ws/                          # WebSocket server
 ├── shared/
 │   └── const.ts                     # Shared constants
+├── tests/
+│   └── landing-page-responsive.spec.ts  # Playwright screenshot regression tests
 ├── package.json                     # Dependencies
 ├── tsconfig.json                    # TypeScript config
 ├── vite.config.ts                   # Vite config
 ├── tailwind.config.ts               # Tailwind config
 └── README.md                        # This file
 ```
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js 18+
+- pnpm 10.4.1+
+- PostgreSQL 14+ (for persistent user accounts)
+
+### Architecture
+
+The app runs as **two servers** in parallel:
+
+| Server | Port | What it does |
+|--------|------|-------------|
+| **Express API** (`server/index.ts`) | `3000` | REST API — auth, agents, trading, mail, notifications |
+| **Vite Dev Server** (`client/`) | `5688` | React frontend with HMR. Proxies `/api/*` to port 3000 |
+
+The `pnpm dev` command starts **both** via `concurrently`.
+
+### Quick Start
+
+```bash
+# 1. Clone and install
+git clone https://github.com/idisaffri-creator/Aether-Quant.git
+cd Aether-Quant
+pnpm install
+
+# 2. Copy the env template and edit if needed
+cp .env.example .env
+
+# 3. Start both servers (backend + frontend)
+pnpm dev
+
+# 4. Open http://localhost:5688 in your browser
+```
+
+The demo account works without a database:
+- **Email:** `demo@aether-energy.ai`
+- **Password:** `demo123`
+
+### Environment Variables
+
+Copy `.env.example` to `.env` and configure:
+
+```bash
+# Required for JWT auth (any random string works for local dev)
+JWT_SECRET=your-secret-here
+
+# Required if using PostgreSQL (falls back to in-memory if unavailable)
+DATABASE_URL=postgres://aether:aether_dev@localhost:5432/aether_energy
+
+# CORS — must match the frontend origin
+CORS_ORIGIN=http://localhost:5688
+```
+
+> **Note:** The backend starts even without a `.env` file. It uses sensible defaults for local development. A database is only required for persistent user accounts; the demo user works without one.
+
+### All Commands
+
+| Command | Description |
+|---------|-------------|
+| `pnpm dev` | Start backend + frontend in parallel (recommended) |
+| `pnpm build` | Build frontend + bundle server for production |
+| `pnpm start` | Start production server (serves built frontend + API on port 3000) |
+| `pnpm preview` | Preview production build with Vite |
+| `pnpm check` | Type-check the entire project |
+| `pnpm test` | Run Vitest unit tests |
+| `pnpm test:responsive` | Run landing page responsive tests |
+| `pnpm test:visual` | Run Playwright screenshot regression tests |
+| `pnpm test:visual:install` | Install Playwright browsers |
+| `pnpm test:visual:update` | Update screenshot baselines |
+| `pnpm format` | Format code with Prettier |
+
+### Running Servers Individually
+
+If you need to run just one server (e.g., for API debugging):
+
+```bash
+# Backend only (Express API on port 3000)
+npx tsx server/index.ts
+
+# Frontend only (Vite on port 5688, no API proxy)
+npx vite --host
+```
+
+> ⚠️ Running the frontend alone means `/api/*` requests will fail with `"Unexpected token '<'"` errors — the Vite dev server needs the backend running to proxy API calls.
+
+### Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| `Unexpected token '<', "<!doctype"` | Backend isn't running. Run `pnpm dev` to start both servers. |
+| Port 3000 already in use | Kill the conflicting process: `npx kill-port 3000` (or `taskkill //F //PID <pid>` on Windows bash) |
+| `ECONNREFUSED` to database | PostgreSQL isn't running or `DATABASE_URL` is wrong. The app works without a DB for the demo user. |
+| Login fails silently | Check that `JWT_SECRET` is set in `.env`. The server generates a random one if missing, but it won't persist across restarts. |
+| Blank page at localhost:3000 | In dev mode, the frontend is at **localhost:5688**, not 3000. Port 3000 is the API. |
+| `Cannot find module` errors | Run `pnpm install` again. If persistent, delete `node_modules` and reinstall. |
+
+### Docker (Production)
+
+```bash
+# Start with PostgreSQL + app containerized
+docker compose up --build
+
+# Or for production
+docker compose -f docker-compose.prod.yml up --build
+```
+
+## 🛠️ Tech Stack
+
+### Frontend
+- **React 19** — UI framework
+- **TypeScript** — Type safety
+- **Tailwind CSS 4** — Utility-first styling
+- **Framer Motion** — Animations and transitions
+- **Recharts** — Data visualization (charts, graphs)
+- **Wouter** — Client-side routing
+- **shadcn/ui** — Accessible component library
+- **Lucide React** — Icon library
+- **Sonner** — Toast notifications
+
+### Build & Dev
+- **Vite** — Fast build tool
+- **ESBuild** — Bundling
+- **TypeScript** — Type checking
+- **Prettier** — Code formatting
+
+### Backend
+- **Express** — REST API server with auth, agents, trading, mail, and more
+- **Node.js** — Runtime
+- **tsx** — TypeScript execution without compile step
+- **concurrently** — Runs frontend + backend in parallel
 
 ## 🎨 Design System
 
@@ -94,74 +234,6 @@ aether-quant/
 - **Charts**: Recharts with custom tooltips and gradients
 - **Buttons**: Cyan primary, transparent outlines, hover animations
 - **Status Indicators**: Pulsing dots for live agents, checkmarks for complete, spinners for loading
-
-## 🛠️ Tech Stack
-
-### Frontend
-- **React 19** — UI framework
-- **TypeScript** — Type safety
-- **Tailwind CSS 4** — Utility-first styling
-- **Framer Motion** — Animations and transitions
-- **Recharts** — Data visualization (charts, graphs)
-- **Wouter** — Client-side routing
-- **shadcn/ui** — Accessible component library
-- **Lucide React** — Icon library
-- **Sonner** — Toast notifications
-
-### Build & Dev
-- **Vite** — Fast build tool
-- **ESBuild** — Bundling
-- **TypeScript** — Type checking
-- **Prettier** — Code formatting
-
-### Backend (Minimal)
-- **Express** — Static file server
-- **Node.js** — Runtime
-
-## 🚀 Getting Started
-
-### Prerequisites
-- Node.js 18+
-- pnpm 10.4.1+
-
-### Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/idisaffri-creator/Aether-Quant.git
-cd Aether-Quant
-
-# Install dependencies
-pnpm install
-
-# Start development server
-pnpm dev
-
-# Open browser
-# Navigate to http://localhost:3000
-```
-
-### Development Commands
-
-```bash
-# Start dev server with HMR
-pnpm dev
-
-# Type check
-pnpm check
-
-# Format code
-pnpm format
-
-# Build for production
-pnpm build
-
-# Preview production build
-pnpm preview
-
-# Start production server
-pnpm start
-```
 
 ## 📊 Mock Data
 

@@ -1,8 +1,7 @@
 /*
- * DashboardLayout v2 – Void Terminal Design
- * Narrow sidebar (64px collapsed / 240px expanded) + top header bar
- * Deep space aesthetic with electric cyan accents
- * Updated: Agent terminology, pricing tier indicator
+ * DashboardLayout v3 – Sleek Institutional Design
+ * Glassmorphic sidebar and header, rounded pill nav items,
+ * premium fintech spacing and typography.
  */
 import { useState, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
@@ -16,7 +15,6 @@ import {
   Settings2,
   Users,
   Library,
-  Bell,
   ChevronLeft,
   ChevronRight,
   Activity,
@@ -31,6 +29,9 @@ import {
   Mail,
   Shield,
   Settings as SettingsIcon,
+  LogOut,
+  User,
+  Briefcase,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -39,7 +40,18 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { useAtom, useAtomValue } from "jotai";
+import { userAtom, tokenAtom } from "@/store/auth";
+import { setAuthToken } from "@/lib/api";
 
 const mainNav = [
   { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -65,24 +77,54 @@ const tradingNav = [
   { path: "/dashboard/settings", label: "Settings", icon: SettingsIcon },
 ];
 
+const adminNav = [
+  { path: "/dashboard/admin-mail", label: "Admin Webmail", icon: Briefcase },
+];
+
+const LogoSvg = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 2L2 22H22L12 2Z" fill="url(#paint0_linear)" fillOpacity="0.1" stroke="url(#paint0_linear)" strokeWidth="2" strokeLinejoin="round"/>
+    <path d="M12 8L7 18H17L12 8Z" fill="url(#paint0_linear)"/>
+    <defs>
+      <linearGradient id="paint0_linear" x1="12" y1="2" x2="12" y2="22" gradientUnits="userSpaceOnUse">
+        <stop stopColor="#F59E0B" />
+        <stop offset="1" stopColor="#3B82F6" />
+      </linearGradient>
+    </defs>
+  </svg>
+);
+
 export default function DashboardLayout({ children }: { children: ReactNode }) {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  const user = useAtomValue(userAtom);
+  const [, setToken] = useAtom(tokenAtom);
+  const [, setUser] = useAtom(userAtom);
+
+  const isAdmin = user?.role === "admin" || user?.tier === "admin";
+
+  const handleLogout = () => {
+    setAuthToken(null);
+    setToken(null);
+    setUser(null);
+    toast.success("Logged out successfully");
+    setLocation("/login");
+  };
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Sidebar */}
       <motion.aside
         initial={false}
-        animate={{ width: collapsed ? 64 : 240 }}
-        transition={{ duration: 0.2, ease: "easeInOut" }}
-        className="relative flex flex-col border-r border-border bg-sidebar shrink-0"
+        animate={{ width: collapsed ? 72 : 260 }}
+        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+        className="relative flex flex-col border-r border-white/5 bg-white/[0.01] backdrop-blur-xl shrink-0 z-20"
       >
         {/* Logo */}
-        <div className="flex items-center h-14 px-3 border-b border-border">
-          <div className="flex items-center gap-2 overflow-hidden">
-            <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
-              <Zap className="w-4 h-4 text-primary" />
+        <div className="flex items-center h-16 px-4 border-b border-white/5">
+          <Link href="/" className="flex items-center gap-3 overflow-hidden group cursor-pointer w-full">
+            <div className="w-8 h-8 rounded-xl bg-white/[0.03] border border-white/10 flex items-center justify-center shrink-0 shadow-lg group-hover:scale-105 transition-transform">
+              <LogoSvg />
             </div>
             <AnimatePresence>
               {!collapsed && (
@@ -90,7 +132,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   initial={{ opacity: 0, width: 0 }}
                   animate={{ opacity: 1, width: "auto" }}
                   exit={{ opacity: 0, width: 0 }}
-                  transition={{ duration: 0.15 }}
+                  transition={{ duration: 0.2 }}
                   className="overflow-hidden whitespace-nowrap"
                 >
                   <span className="font-display font-bold text-sm text-foreground tracking-tight">
@@ -99,20 +141,20 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 </motion.div>
               )}
             </AnimatePresence>
-          </div>
+          </Link>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 py-3 px-2 space-y-1 overflow-y-auto">
+        <nav className="flex-1 py-4 px-3 space-y-1.5 overflow-y-auto no-scrollbar">
           <AnimatePresence>
             {!collapsed && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider px-3 pb-1"
+                className="text-[10px] font-sans font-bold text-muted-foreground uppercase tracking-widest px-3 pb-2"
               >
-                Aether Quant
+                Core Operations
               </motion.div>
             )}
           </AnimatePresence>
@@ -125,30 +167,26 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   <Link href={item.path}>
                     <motion.div
                       className={`
-                        flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors relative
+                        flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-sans font-medium transition-all relative group overflow-hidden
                         ${isActive
-                          ? "bg-primary/10 text-primary"
-                          : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                          ? "text-primary bg-primary/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] border border-primary/20"
+                          : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04] border border-transparent"
                         }
                       `}
-                      whileHover={{ x: 2 }}
-                      transition={{ duration: 0.1 }}
+                      whileHover={{ scale: 1.01 }}
+                      whileTap={{ scale: 0.98 }}
                     >
                       {isActive && (
-                        <motion.div
-                          layoutId="sidebar-active"
-                          className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-primary rounded-r"
-                          transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                        />
+                        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent pointer-events-none" />
                       )}
-                      <Icon className="w-4.5 h-4.5 shrink-0" />
+                      <Icon className={`w-4.5 h-4.5 shrink-0 ${isActive ? "text-primary drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]" : "text-muted-foreground group-hover:text-foreground"}`} />
                       <AnimatePresence>
                         {!collapsed && (
                           <motion.span
                             initial={{ opacity: 0, width: 0 }}
                             animate={{ opacity: 1, width: "auto" }}
                             exit={{ opacity: 0, width: 0 }}
-                            transition={{ duration: 0.15 }}
+                            transition={{ duration: 0.2 }}
                             className="overflow-hidden whitespace-nowrap"
                           >
                             {item.label}
@@ -159,25 +197,27 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   </Link>
                 </TooltipTrigger>
                 {collapsed && (
-                  <TooltipContent side="right" sideOffset={8}>
+                  <TooltipContent side="right" sideOffset={8} className="bg-popover/90 backdrop-blur-md border-white/10 text-foreground font-sans text-xs font-medium px-3 py-1.5 rounded-lg">
                     {item.label}
                   </TooltipContent>
                 )}
               </Tooltip>
             );
           })}
+          
           <AnimatePresence>
             {!collapsed && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider px-3 pt-3 pb-1"
+                className="text-[10px] font-sans font-bold text-muted-foreground uppercase tracking-widest px-3 pt-6 pb-2"
               >
-                Aether Energy
+                Market Intelligence
               </motion.div>
             )}
           </AnimatePresence>
+          
           {tradingNav.map((item) => {
             const isActive = location === item.path;
             const Icon = item.icon;
@@ -187,30 +227,26 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   <Link href={item.path}>
                     <motion.div
                       className={`
-                        flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors relative
+                        flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-sans font-medium transition-all relative group overflow-hidden
                         ${isActive
-                          ? "bg-primary/10 text-primary"
-                          : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                          ? "text-blue-400 bg-blue-500/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] border border-blue-500/20"
+                          : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04] border border-transparent"
                         }
                       `}
-                      whileHover={{ x: 2 }}
-                      transition={{ duration: 0.1 }}
+                      whileHover={{ scale: 1.01 }}
+                      whileTap={{ scale: 0.98 }}
                     >
                       {isActive && (
-                        <motion.div
-                          layoutId="sidebar-active"
-                          className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-primary rounded-r"
-                          transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                        />
+                        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-transparent pointer-events-none" />
                       )}
-                      <Icon className="w-4.5 h-4.5 shrink-0" />
+                      <Icon className={`w-4.5 h-4.5 shrink-0 ${isActive ? "text-blue-400 drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]" : "text-muted-foreground group-hover:text-foreground"}`} />
                       <AnimatePresence>
                         {!collapsed && (
                           <motion.span
                             initial={{ opacity: 0, width: 0 }}
                             animate={{ opacity: 1, width: "auto" }}
                             exit={{ opacity: 0, width: 0 }}
-                            transition={{ duration: 0.15 }}
+                            transition={{ duration: 0.2 }}
                             className="overflow-hidden whitespace-nowrap"
                           >
                             {item.label}
@@ -221,7 +257,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   </Link>
                 </TooltipTrigger>
                 {collapsed && (
-                  <TooltipContent side="right" sideOffset={8}>
+                  <TooltipContent side="right" sideOffset={8} className="bg-popover/90 backdrop-blur-md border-white/10 text-foreground font-sans text-xs font-medium px-3 py-1.5 rounded-lg">
                     {item.label}
                   </TooltipContent>
                 )}
@@ -230,42 +266,71 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           })}
         </nav>
 
+        {isAdmin && (
+          <nav className="space-y-1 pt-4 border-t border-amber/30">
+            <div className="px-3 mb-2"><span className="text-[9px] font-mono uppercase tracking-widest text-amber">Admin</span></div>
+            {adminNav.map((item) => {
+              const isActive = location === item.path;
+              const Icon = item.icon;
+              return (
+                <Tooltip key={item.path} delayDuration={collapsed ? 100 : 1000}>
+                  <TooltipTrigger asChild>
+                    <Link href={item.path}>
+                      <div className={`${isActive ? "text-amber bg-amber/10 border-amber/30" : "text-muted-foreground border-transparent hover:bg-amber/[0.04]"} flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm border transition-all`}>
+                        <Icon className={`w-4.5 h-4.5 shrink-0 ${isActive ? "text-amber" : ""}`} />
+                        {!collapsed && <span className="overflow-hidden whitespace-nowrap">{item.label}</span>}
+                      </div>
+                    </Link>
+                  </TooltipTrigger>
+                  {collapsed && (
+                    <TooltipContent side="right" sideOffset={8} className="bg-popover/90 backdrop-blur-md border-amber/20 text-foreground font-sans text-xs font-medium px-3 py-1.5 rounded-lg">
+                      {item.label}
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              );
+            })}
+          </nav>
+        )}
+
         {/* Collapse toggle */}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="absolute -right-3 top-20 w-6 h-6 rounded-full bg-secondary border border-border flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors z-10"
+          className="absolute -right-3.5 top-20 w-7 h-7 rounded-full bg-white/[0.05] backdrop-blur-md border border-white/10 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-white/10 transition-all z-30 shadow-lg shadow-black/20"
         >
           {collapsed ? (
-            <ChevronRight className="w-3 h-3" />
+            <ChevronRight className="w-3.5 h-3.5" />
           ) : (
-            <ChevronLeft className="w-3 h-3" />
+            <ChevronLeft className="w-3.5 h-3.5" />
           )}
         </button>
 
         {/* Bottom section — Plan tier */}
-        <div className="p-3 border-t border-border space-y-2">
+        <div className="p-4 border-t border-white/5 space-y-3 bg-white/[0.01]">
           <AnimatePresence>
             {!collapsed && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-primary/5 border border-primary/20"
+                className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 shadow-inner"
               >
-                <Crown className="w-3.5 h-3.5 text-primary shrink-0" />
-                <span className="text-xs font-mono text-primary font-medium">Full AETHER</span>
+                <Crown className="w-4 h-4 text-primary shrink-0 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
+                <span className="text-[11px] font-sans text-primary font-bold uppercase tracking-widest">
+                  {user?.tier === 'enterprise' ? 'Full Aether' : user?.tier === 'professional' ? 'Pro Access' : user?.tier === 'admin' ? 'Admin Console' : 'Free Tier'}
+                </span>
               </motion.div>
             )}
           </AnimatePresence>
-          <div className="flex items-center gap-2 px-2">
-            <div className="w-2 h-2 rounded-full bg-profit animate-pulse-glow shrink-0" />
+          <div className="flex items-center justify-center gap-2 px-2">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.6)] animate-pulse shrink-0" />
             <AnimatePresence>
               {!collapsed && (
                 <motion.span
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="text-xs text-muted-foreground font-mono"
+                  className="text-xs text-muted-foreground font-sans font-medium"
                 >
                   System Online
                 </motion.span>
@@ -276,63 +341,86 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       </motion.aside>
 
       {/* Main content area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden relative">
+        {/* Ambient background glow for main area */}
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 blur-[120px] rounded-full pointer-events-none -z-10" />
+
         {/* Top header */}
-        <header className="h-14 border-b border-border bg-sidebar flex items-center justify-between px-6 shrink-0">
+        <header className="h-16 border-b border-white/5 bg-white/[0.01] backdrop-blur-xl flex items-center justify-between px-8 shrink-0 z-10 sticky top-0">
           <div className="flex items-center gap-3">
-            <Activity className="w-4 h-4 text-primary" />
-            <span className="font-display font-semibold text-sm text-foreground">
+            <div className="w-8 h-8 rounded-lg bg-white/[0.03] border border-white/5 flex items-center justify-center">
+              <Activity className="w-4 h-4 text-foreground/80" />
+            </div>
+            <span className="font-display font-semibold text-base text-foreground tracking-tight">
               {[...mainNav, ...tradingNav].find((n) => n.path === location)?.label || "Dashboard"}
             </span>
-            <Badge
-              variant="outline"
-              className="text-[10px] font-mono border-primary/30 text-primary bg-primary/5"
-            >
-              LIVE
-            </Badge>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-5">
             {/* Market status */}
-            <div className="hidden md:flex items-center gap-2 text-xs font-mono text-muted-foreground">
-              <span>CL: $72.85</span>
-              <span className="text-profit">+0.42%</span>
-              <span className="mx-1 text-border">|</span>
-              <span>GC: $2,048.30</span>
-              <span className="text-loss">-0.18%</span>
+            <div className="hidden md:flex items-center gap-3 px-4 py-1.5 rounded-full bg-white/[0.03] border border-white/5 text-xs font-mono font-medium">
+              <span className="text-muted-foreground">CL:</span>
+              <span className="text-white">$72.85</span>
+              <span className="text-emerald-400">+0.42%</span>
+              <span className="w-px h-3 bg-white/10 mx-1" />
+              <span className="text-muted-foreground">GC:</span>
+              <span className="text-white">$2,048.30</span>
+              <span className="text-red-400">-0.18%</span>
             </div>
-
-            {/* Pricing tier badge */}
-            <Badge
-              variant="outline"
-              className="hidden lg:flex text-[10px] font-mono border-primary/20 text-primary/80 bg-primary/5 gap-1"
-            >
-              <Crown className="w-2.5 h-2.5" />
-              Full AETHER
-            </Badge>
 
             {/* Notifications */}
             <NotificationBell />
 
-            {/* User avatar */}
-            <Avatar className="w-8 h-8 border border-border">
-              <AvatarFallback className="bg-primary/10 text-primary text-xs font-display font-semibold">
-                AQ
-              </AvatarFallback>
-            </Avatar>
+            {/* User avatar with dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="outline-none">
+                  <Avatar className="w-9 h-9 border border-white/10 hover:border-primary/50 transition-colors shadow-sm ring-2 ring-transparent focus:ring-primary/20">
+                    <AvatarFallback className="bg-gradient-to-br from-primary/20 to-blue-500/20 text-foreground text-xs font-display font-bold uppercase">
+                      {user?.username?.[0] || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64 bg-[oklch(0.14_0.01_250)]/95 backdrop-blur-xl border-white/10 p-2 rounded-xl shadow-2xl">
+                <DropdownMenuLabel className="font-display p-2">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-bold leading-none text-foreground">{user?.username || "Trader"}</p>
+                    <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator className="bg-white/5 my-1" />
+                <DropdownMenuItem className="focus:bg-white/[0.05] rounded-lg cursor-pointer gap-3 p-2.5 font-medium text-sm text-foreground/80">
+                  <User className="w-4 h-4" />
+                  Profile Settings
+                </DropdownMenuItem>
+                <DropdownMenuItem className="focus:bg-white/[0.05] rounded-lg cursor-pointer gap-3 p-2.5 font-medium text-sm text-foreground/80">
+                  <SettingsIcon className="w-4 h-4" />
+                  System Preferences
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-white/5 my-1" />
+                <DropdownMenuItem 
+                  className="focus:bg-red-500/10 text-red-400 rounded-lg cursor-pointer gap-3 p-2.5 font-medium text-sm"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="w-4 h-4" />
+                  Secure Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto grid-bg">
+        <main className="flex-1 overflow-y-auto grid-bg p-6 lg:p-8">
           <AnimatePresence mode="wait">
             <motion.div
               key={location}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
-              className="h-full"
+              initial={{ opacity: 0, y: 15, scale: 0.99 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -15, scale: 0.99 }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              className="h-full max-w-7xl mx-auto"
             >
               {children}
             </motion.div>

@@ -4,7 +4,8 @@ export interface User {
   username: string;
   walletAddress?: string;
   createdAt: string;
-  tier: 'free' | 'professional' | 'enterprise';
+  tier: 'free' | 'professional' | 'enterprise' | 'admin';
+  role?: 'user' | 'admin';
 }
 
 export interface Strategy {
@@ -163,4 +164,130 @@ export interface MailFolder {
   id: string;
   label: string;
   count: number;
+}
+
+export type AdminMailCategory = 'lead' | 'marketing' | 'support' | 'blast' | 'system' | 'general' | 'sales' | 'partnership';
+export type AdminMailFolder = 'inbox' | 'sent' | 'drafts' | 'spam' | 'trash' | 'leads' | 'marketing' | 'support' | 'blasts' | 'archive' | 'scheduled';
+
+export interface AdminMailMessage {
+  id: string;
+  threadId?: string;
+  from: string;
+  fromEmail: string;
+  to: string[];
+  cc?: string[];
+  bcc?: string[];
+  subject: string;
+  preview: string;
+  body: string;
+  folder: AdminMailFolder;
+  category: AdminMailCategory;
+  status: 'unread' | 'read' | 'replied' | 'forwarded' | 'archived' | 'spam' | 'trash';
+  priority: 'low' | 'normal' | 'high' | 'urgent';
+  starred: boolean;
+  hasAttachments: boolean;
+  attachments?: { name: string; size: number; type: string }[];
+  tags?: string[];
+  campaignId?: string;
+  contactId?: string;
+  inReplyTo?: string;
+  date: string;
+  timestamp: number;
+  readAt?: string | null;
+  repliedAt?: string | null;
+  snoozedUntil?: number | null;
+  openedAt?: string | null;
+  clickedAt?: string | null;
+}
+
+export interface AdminMailSnippet {
+  id: string;
+  name: string;
+  subject?: string;
+  body: string;
+  tags?: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminMailContact {
+  id: string;
+  name: string;
+  email: string;
+  company?: string;
+  role?: string;
+  phone?: string;
+  source: 'website' | 'referral' | 'campaign' | 'manual' | 'event' | 'social' | 'cold_outreach';
+  status: 'new' | 'contacted' | 'qualified' | 'unqualified' | 'customer' | 'unsubscribed';
+  tags: string[];
+  notes?: string;
+  lastContactedAt?: string | null;
+  createdAt: string;
+  meta?: {
+    location?: string;
+    interest?: 'platform' | 'api' | 'enterprise' | 'partnership' | 'support' | 'other';
+    budget?: string;
+    timeline?: string;
+  };
+}
+
+export interface AdminMailTemplate {
+  id: string;
+  name: string;
+  category: AdminMailCategory;
+  subject: string;
+  body: string;
+  variables: string[];
+  isSystem?: boolean;
+  createdAt: string;
+  updatedAt: string;
+  useCount: number;
+}
+
+export interface AdminMailCampaign {
+  id: string;
+  name: string;
+  subject: string;
+  body: string;
+  category: AdminMailCategory;
+  status: 'draft' | 'scheduled' | 'sending' | 'sent' | 'paused' | 'failed';
+  audience: {
+    contactIds: string[];
+    tags: string[];
+    source?: AdminMailContact['source'];
+    estimated: number;
+  };
+  stats: {
+    sent: number;
+    delivered: number;
+    opened: number;
+    clicked: number;
+    replied: number;
+    bounced: number;
+    unsubscribed: number;
+  };
+  scheduledAt?: string | null;
+  sentAt?: string | null;
+  createdBy: string;
+  createdAt: string;
+  templateId?: string;
+}
+
+export interface AdminMailStats {
+  overview: {
+    totalMessages: number;
+    unreadCount: number;
+    totalContacts: number;
+    activeCampaigns: number;
+    emailsSentToday: number;
+    emailsSentThisWeek: number;
+    averageResponseTime: string;
+    responseRate: number;
+  };
+  byCategory: Record<AdminMailCategory, number>;
+  byFolder: Record<AdminMailFolder, number>;
+  snoozedCount?: number;
+  snippetsCount?: number;
+  draftsCount?: number;
+  recentActivity: { id: string; type: 'received' | 'sent' | 'campaign' | 'contact_added'; description: string; timestamp: number }[];
 }

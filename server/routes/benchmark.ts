@@ -4,12 +4,12 @@ import { benchmarkAgent } from "../agents/benchmark";
 
 const router = Router();
 
-router.get("/benchmark", authMiddleware, async (_req, res) => {
+router.get("/", authMiddleware, async (_req, res) => {
   const summaries = await benchmarkAgent.runAll();
   res.json({ summaries, history: benchmarkAgent.getHistory() });
 });
 
-router.get("/benchmark/:agentId", authMiddleware, async (req, res) => {
+router.get("/:agentId", authMiddleware, async (req, res) => {
   const { agentId } = req.params;
   const summary = await benchmarkAgent.runBenchmark(agentId, agentId);
   res.json({ summary });

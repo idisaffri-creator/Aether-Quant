@@ -470,7 +470,7 @@ export default function IdeaExtractor() {
                     {/* Actions */}
                     <div className="flex gap-2 pt-2">
                       <Button
-                        onClick={() => setLocation("/backtest")}
+                        onClick={() => setLocation("/dashboard/backtest")}
                         className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 font-display font-semibold"
                       >
                         <Play className="w-4 h-4 mr-2" />

@@ -13,7 +13,7 @@ import {
   SolflareWalletAdapter,
 } from "@solana/wallet-adapter-wallets";
 
-const SOLANA_NETWORK = process.env.VITE_SOLANA_RPC_URL || "https://api.devnet.solana.com";
+const SOLANA_NETWORK = (import.meta as any).env?.VITE_SOLANA_RPC_URL || "https://api.devnet.solana.com";
 
 interface WalletContextValue {
   connected: boolean;

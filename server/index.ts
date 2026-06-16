@@ -19,6 +19,8 @@ import optimizeRoutes from "./routes/optimize";
 import mailRoutes from "./routes/mail";
 import notificationRoutes from "./routes/notifications";
 import auditRoutes from "./routes/audit";
+import adminMailRoutes from "./routes/adminMail";
+import adminUsersRoutes from "./routes/adminUsers";
 import { setupWebSocket } from "./ws/index";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -70,6 +72,8 @@ async function startServer() {
   app.use("/api/mail", mailRoutes);
   app.use("/api/notifications", notificationRoutes);
   app.use("/api/audit", auditRoutes);
+  app.use("/api/admin/mail", adminMailRoutes);
+  app.use("/api/admin", adminUsersRoutes);
 
   // WebSocket
   setupWebSocket(server);

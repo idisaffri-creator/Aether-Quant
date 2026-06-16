@@ -153,7 +153,7 @@ export default function BacktestResults() {
               variant="outline"
               size="sm"
               className="text-xs"
-              onClick={() => setLocation("/optimization")}
+              onClick={() => setLocation("/dashboard/optimization")}
             >
               <Settings2 className="w-3.5 h-3.5 mr-1" />
               Optimize

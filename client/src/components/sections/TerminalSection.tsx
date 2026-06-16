@@ -1,630 +1,443 @@
-/* ============================================================
-   AETHER ENERGY — Bloomberg Terminal-Inspired Section
-   Design: Elemental Precision — Dark terminal UI with amber
-   accents, adapted from feremabraz/bloomberg-terminal for
-   oil & energy markets. Self-contained with local state.
-   ============================================================ */
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useState, useRef } from "react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, LineChart, Line, BarChart, Bar
+  ResponsiveContainer, BarChart, Bar, LineChart, Line,
 } from "recharts";
 import {
-  Activity, TrendingUp, TrendingDown, RefreshCw, Newspaper,
-  BarChart2, Zap, AlertTriangle, ChevronUp, ChevronDown
+  Activity, TrendingUp, BarChart2, Shield, Zap,
+  Clock, AlertTriangle,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
-// ─── Color palette (Bloomberg-style, amber-tinted for Aether) ─────────────
 const T = {
-  bg:       "#0a0a0c",
-  surface:  "#111115",
-  header:   "#0d0d10",
-  border:   "#1e1e26",
-  text:     "#e8e8e0",
-  textSec:  "#666670",
-  amber:    "#f59e0b",
-  amberDim: "#92600a",
-  green:    "#22c55e",
-  red:      "#ef4444",
-  blue:     "#3b82f6",
-  gray:     "#444450",
+  border: "rgba(255, 255, 255, 0.08)",
+  textSec: "#94a3b8",
+  amber: "#f59e0b",
+  green: "#34d399",
+  red: "#f87171",
 };
 
-// ─── Oil market data ───────────────────────────────────────────────────────
 const OIL_MARKETS = [
-  { id: "WTI CRUDE",    region: "Americas", value: 78.42,  change:  0.56, pctChange:  0.72, ytd:  3.21, time: "10:46", vol: 18.4 },
-  { id: "BRENT CRUDE",  region: "Europe",   value: 82.15,  change:  0.47, pctChange:  0.58, ytd:  2.87, time: "10:46", vol: 17.9 },
-  { id: "NATURAL GAS",  region: "Americas", value:  2.84,  change: -0.035,pctChange: -1.23, ytd: -8.42, time: "10:45", vol: 42.1 },
-  { id: "HEATING OIL",  region: "Americas", value:  2.67,  change:  0.009,pctChange:  0.34, ytd:  1.92, time: "10:44", vol: 22.3 },
-  { id: "GASOLINE",     region: "Americas", value:  2.41,  change: -0.004,pctChange: -0.18, ytd: -1.14, time: "10:43", vol: 19.8 },
-  { id: "OPEC BASKET",  region: "Middle East",value:80.91, change:  0.73, pctChange:  0.91, ytd:  4.12, time: "10:42", vol: 15.2 },
-  { id: "DUBAI CRUDE",  region: "Middle East",value:79.34, change:  0.61, pctChange:  0.77, ytd:  3.55, time: "10:41", vol: 16.7 },
-  { id: "URALS CRUDE",  region: "Europe",   value: 68.20,  change: -0.42, pctChange: -0.61, ytd: -6.34, time: "10:40", vol: 28.9 },
-  { id: "LNG SPOT",     region: "Asia",     value: 12.45,  change:  0.18, pctChange:  1.47, ytd:  9.21, time: "10:39", vol: 35.6 },
-  { id: "COAL API2",    region: "Europe",   value: 92.10,  change: -1.20, pctChange: -1.29, ytd:-12.44, time: "10:38", vol: 31.2 },
-  { id: "CARBON ETS",   region: "Europe",   value: 64.80,  change:  0.95, pctChange:  1.49, ytd: 18.72, time: "10:37", vol: 24.8 },
-  { id: "PALM OIL",     region: "Asia",     value: 3842.0, change: 28.00, pctChange:  0.73, ytd:  5.44, time: "10:36", vol: 20.1 },
+  { id: "WTI CRUDE", region: "US", value: 78.42, change: 0.72, pctChange: 0.92, vol: 24.5, ytd: 4.2 },
+  { id: "BRENT", region: "UK", value: 82.15, change: 0.58, pctChange: 0.71, vol: 22.1, ytd: 3.8 },
+  { id: "NAT GAS", region: "US", value: 2.84, change: -1.23, pctChange: -2.1, vol: 45.2, ytd: -12.4 },
+  { id: "GASOLINE", region: "US", value: 2.41, change: -0.18, pctChange: -0.5, vol: 28.4, ytd: 2.1 },
+  { id: "GOLD", region: "US", value: 2048.30, change: -3.68, pctChange: -0.18, vol: 14.2, ytd: 8.6 },
+  { id: "SILVER", region: "US", value: 24.15, change: 0.32, pctChange: 1.34, vol: 32.8, ytd: 5.2 },
 ];
 
-const NEWS_ITEMS = [
-  { time: "10:42", headline: "OPEC+ confirms output cut extension through Q3 2026", tag: "OPEC", impact: "bullish" },
-  { time: "10:31", headline: "EIA crude inventory draw of 4.2M barrels beats estimates", tag: "EIA", impact: "bullish" },
-  { time: "10:18", headline: "Fed signals higher-for-longer rates; dollar strengthens", tag: "MACRO", impact: "bearish" },
-  { time: "10:05", headline: "Libya force majeure lifted; 300k bpd returns to market", tag: "SUPPLY", impact: "bearish" },
-  { time: "09:52", headline: "Strait of Hormuz shipping traffic rises 8% week-on-week", tag: "SHIPPING", impact: "neutral" },
-  { time: "09:41", headline: "IEA raises 2026 oil demand forecast by 200k bpd", tag: "DEMAND", impact: "bullish" },
-  { time: "09:28", headline: "Saudi Aramco maintains official selling price for Asia", tag: "PRICING", impact: "neutral" },
-  { time: "09:15", headline: "US shale rig count falls 12 to 478 — Baker Hughes", tag: "SUPPLY", impact: "bullish" },
-  { time: "08:57", headline: "China crude imports hit 11.2M bpd in May, second highest ever", tag: "DEMAND", impact: "bullish" },
-  { time: "08:44", headline: "Russia oil export revenues decline 3.1% amid price cap", tag: "GEOPOLITICS", impact: "neutral" },
-];
+const genAreaData = (seed: number, base: number, pts = 40) => {
+  let v = base;
+  return Array.from({ length: pts }, (_, i) => {
+    v += (Math.sin(i * 0.5 + seed) * base * 0.02) + (Math.random() - 0.5) * base * 0.01;
+    return { t: i, v };
+  });
+};
 
-// ─── Sparkline canvas component ────────────────────────────────────────────
-function Sparkline({ data, color, width = 72, height = 18 }: {
-  data: number[]; color: string; width?: number; height?: number;
-}) {
-  const ref = useRef<HTMLCanvasElement>(null);
-  useEffect(() => {
-    const canvas = ref.current;
-    if (!canvas) return;
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
-    canvas.style.width = `${width}px`;
-    canvas.style.height = `${height}px`;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.scale(dpr, dpr);
-    ctx.clearRect(0, 0, width, height);
-    if (data.length < 2) return;
-    const min = Math.min(...data);
-    const max = Math.max(...data);
-    const range = max - min || 1;
-    const pad = 2;
-    const xStep = (width - pad * 2) / (data.length - 1);
-    ctx.beginPath();
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1.5;
-    data.forEach((v, i) => {
-      const x = pad + i * xStep;
-      const y = height - pad - ((v - min) / range) * (height - pad * 2);
-      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-    });
-    ctx.stroke();
-  }, [data, color, width, height]);
-  return <canvas ref={ref} className="inline-block align-middle" />;
-}
+/* Volatility surface data */
+const volSurface = Array.from({ length: 12 }, (_, i) => ({
+  tenor: ["1M", "2M", "3M", "6M", "9M", "1Y", "18M", "2Y", "3Y", "4Y", "5Y", "10Y"][i],
+  iv: +(22 + Math.sin(i * 0.8) * 8 + Math.random() * 3).toFixed(1),
+  hv: +(20 + Math.cos(i * 0.6) * 6 + Math.random() * 2).toFixed(1),
+}));
 
-// ─── Generate deterministic sparkline data ─────────────────────────────────
-function genSparkline(seed: number, base: number, len = 20): number[] {
-  let s = seed;
-  const next = () => { s = (s * 1664525 + 1013904223) & 0xffffffff; return (s >>> 0) / 0xffffffff; };
-  const arr: number[] = [base];
-  for (let i = 1; i < len; i++) arr.push(Math.max(0.01, arr[i-1] * (1 + (next() - 0.49) * 0.04)));
-  return arr;
-}
+/* Correlation matrix data */
+const corrAssets = ["CL", "BZ", "NG", "GC", "SI", "HG"];
+const corrMatrix = corrAssets.map((a, i) =>
+  corrAssets.map((b, j) => {
+    if (i === j) return 1;
+    if (i < j) {
+      const base = a === "CL" && b === "BZ" ? 0.92 : a === "CL" && b === "NG" ? 0.45 : a === "GC" && b === "SI" ? 0.82 : 0.2 + Math.random() * 0.3;
+      return +base.toFixed(2);
+    }
+    return 0;
+  })
+);
 
-// ─── Generate chart data ────────────────────────────────────────────────────
-function genAreaData(seed: number, base: number, points = 30) {
-  const data = genSparkline(seed, base, points);
-  return data.map((v, i) => ({ t: i, v: +v.toFixed(2) }));
-}
+/* Order book data */
+const orderBook = {
+  bids: Array.from({ length: 8 }, (_, i) => ({
+    price: 78.42 - (i + 1) * 0.03,
+    size: Math.round(50 + Math.random() * 200),
+    total: 0,
+  })).map((b, i, arr) => {
+    const total = arr.slice(0, i + 1).reduce((s, x) => s + x.size, 0);
+    return { ...b, total };
+  }),
+  asks: Array.from({ length: 8 }, (_, i) => ({
+    price: 78.45 + i * 0.03,
+    size: Math.round(50 + Math.random() * 200),
+    total: 0,
+  })).map((a, i, arr) => {
+    const total = arr.slice(0, i + 1).reduce((s, x) => s + x.size, 0);
+    return { ...a, total };
+  }),
+};
 
-function genVolData(seed: number, points = 20) {
-  let s = seed * 7;
-  const next = () => { s = (s * 1664525 + 1013904223) & 0xffffffff; return (s >>> 0) / 0xffffffff; };
-  return Array.from({ length: points }, (_, i) => ({ t: i, v: +(next() * 40 + 10).toFixed(1) }));
-}
-
-// ─── Main Terminal Section ─────────────────────────────────────────────────
-type View = "market" | "news" | "movers" | "volatility";
+type View = "overview" | "analytics" | "execution";
 
 export default function TerminalSection() {
-  const [view, setView] = useState<View>("market");
-  const [sortKey, setSortKey] = useState<"pctChange" | "value" | "vol">("pctChange");
-  const [sortDir, setSortDir] = useState<1 | -1>(-1);
-  const [selectedRow, setSelectedRow] = useState<string | null>("WTI CRUDE");
-  const [tick, setTick] = useState(0);
-  const [flashCells, setFlashCells] = useState<Record<string, boolean>>({});
+  const [view, setView] = useState<View>("overview");
   const sectionRef = useRef<HTMLDivElement>(null);
-  const [inView, setInView] = useState(false);
-
-  // Intersection observer for entrance animation
-  useEffect(() => {
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setInView(true); }, { threshold: 0.1 });
-    if (sectionRef.current) obs.observe(sectionRef.current);
-    return () => obs.disconnect();
-  }, []);
-
-  // Simulated live tick
-  useEffect(() => {
-    const id = setInterval(() => {
-      setTick(t => t + 1);
-      // Flash a random cell
-      const row = OIL_MARKETS[Math.floor(Math.random() * OIL_MARKETS.length)];
-      setFlashCells(prev => ({ ...prev, [row.id]: true }));
-      setTimeout(() => setFlashCells(prev => ({ ...prev, [row.id]: false })), 600);
-    }, 2000);
-    return () => clearInterval(id);
-  }, []);
-
-  const handleSort = (key: typeof sortKey) => {
-    if (key === sortKey) setSortDir(d => d === 1 ? -1 : 1);
-    else { setSortKey(key); setSortDir(-1); }
-  };
-
-  const sorted = [...OIL_MARKETS].sort((a, b) => (b[sortKey] - a[sortKey]) * sortDir);
-  const selected = OIL_MARKETS.find(m => m.id === selectedRow) || OIL_MARKETS[0];
-  const chartData = genAreaData(selected.id.charCodeAt(0) * 7, selected.value, 40);
-  const volData = genVolData(selected.id.charCodeAt(0) * 3);
-
-  const SortIcon = ({ k }: { k: typeof sortKey }) => (
-    sortKey === k
-      ? (sortDir === -1 ? <ChevronDown className="w-3 h-3 inline ml-0.5 text-amber-400" /> : <ChevronUp className="w-3 h-3 inline ml-0.5 text-amber-400" />)
-      : null
-  );
+  const selected = OIL_MARKETS[0];
+  const chartData = genAreaData(42, selected.value, 40);
 
   return (
-    <section
-      ref={sectionRef}
-      id="terminal"
-      className="py-24 lg:py-32 relative overflow-hidden"
-    >
-      {/* Subtle background grid */}
-      <div className="absolute inset-0 pointer-events-none opacity-[0.03]"
-        style={{ backgroundImage: "linear-gradient(oklch(1 0 0) 1px, transparent 1px), linear-gradient(90deg, oklch(1 0 0) 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
+    <section ref={sectionRef} id="terminal" className="py-24 lg:py-32 relative overflow-hidden">
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-primary/5 blur-[120px] rounded-full pointer-events-none" />
 
       <div className="container relative z-10">
-        {/* Section header */}
-        <div className={`mb-10 transition-all duration-700 ${inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
-          <div className="section-number mb-3">Live Intelligence</div>
-          <h2 className="font-display text-4xl lg:text-5xl font-bold text-white leading-tight mb-4">
-            Bloomberg-Grade{" "}
-            <span className="text-amber-400">Terminal Interface</span>
-          </h2>
-          <p className="text-white/55 text-lg max-w-2xl leading-relaxed">
-            Aether's market intelligence layer is modelled after institutional terminal UX — real-time oil market data,
-            multi-view analytics, and sparkline tracking across every major energy benchmark.
-          </p>
-        </div>
-
-        {/* Terminal window */}
-        <div
-          className={`rounded-2xl overflow-hidden border border-white/8 shadow-2xl shadow-black/60 transition-all duration-700 delay-150 ${inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
-          style={{ background: T.bg }}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          viewport={{ once: true }}
+          className="mb-16 text-center max-w-3xl mx-auto"
         >
-          {/* Terminal title bar */}
-          <div className="flex items-center justify-between px-4 py-2.5 border-b"
-            style={{ background: T.header, borderColor: T.border }}>
-            <div className="flex items-center gap-3">
-              <div className="flex gap-1.5">
-                <div className="w-3 h-3 rounded-full bg-red-500/80" />
-                <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
-                <div className="w-3 h-3 rounded-full bg-green-500/80" />
-              </div>
-              <span className="font-mono text-xs" style={{ color: T.amber }}>
-                AETHER TERMINAL — ENERGY MARKETS
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-              <span className="font-mono text-xs" style={{ color: T.textSec }}>
-                LIVE · {new Date().toLocaleTimeString("en-US", { hour12: false })}
-              </span>
-            </div>
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 mb-6 backdrop-blur-sm">
+            <Shield className="w-4 h-4 text-primary" />
+            <span className="text-primary text-[11px] font-sans font-bold tracking-wider uppercase">
+              Institutional Infrastructure
+            </span>
           </div>
+          <h2 className="font-display text-4xl lg:text-5xl font-bold text-white leading-tight mb-6">
+            The next generation of{" "}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-400">
+              quant execution.
+            </span>
+          </h2>
+          <p className="text-muted-foreground text-lg leading-relaxed font-sans">
+            Leave the clunky terminals behind. Experience a beautifully unified, glassmorphic interface that brings algorithmic clarity to complex energy markets.
+          </p>
+        </motion.div>
 
-          {/* View selector bar */}
-          <div className="flex items-center gap-0 border-b overflow-x-auto"
-            style={{ background: T.surface, borderColor: T.border }}>
-            {([
-              { key: "market",     label: "MARKET",     icon: Activity },
-              { key: "news",       label: "NEWS",       icon: Newspaper },
-              { key: "movers",     label: "MOVERS",     icon: TrendingUp },
-              { key: "volatility", label: "VOLATILITY", icon: BarChart2 },
-            ] as { key: View; label: string; icon: React.ElementType }[]).map(({ key, label, icon: Icon }) => (
-              <button
-                key={key}
-                onClick={() => setView(key)}
-                className="flex items-center gap-1.5 px-4 py-2.5 font-mono text-xs font-bold transition-all shrink-0 border-b-2"
-                style={{
-                  color: view === key ? T.amber : T.textSec,
-                  borderBottomColor: view === key ? T.amber : "transparent",
-                  background: view === key ? `${T.bg}` : "transparent",
-                }}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                {label}
-              </button>
-            ))}
-            <div className="ml-auto flex items-center gap-2 px-3">
-              <button
-                className="flex items-center gap-1 px-2 py-1 rounded font-mono text-xs transition-colors"
-                style={{ color: T.textSec, background: T.border }}
-                onClick={() => setTick(t => t + 1)}
-              >
-                <RefreshCw className="w-3 h-3" />
-                REFRESH
-              </button>
-            </div>
-          </div>
-
-          {/* ── MARKET VIEW ─────────────────────────────────────────── */}
-          {view === "market" && (
-            <div className="flex flex-col lg:flex-row">
-              {/* Left: market table */}
-              <div className="flex-1 overflow-x-auto">
-                <table className="w-full font-mono text-xs" style={{ color: T.text }}>
-                  <thead>
-                    <tr style={{ background: T.surface, borderBottom: `1px solid ${T.border}` }}>
-                      <th className="text-left px-3 py-2" style={{ color: T.amber }}>INSTRUMENT</th>
-                      <th className="text-center px-2 py-2" style={{ color: T.textSec }}>REGION</th>
-                      <th className="text-center px-2 py-2 w-20" style={{ color: T.textSec }}>5D TREND</th>
-                      <th
-                        className="text-right px-3 py-2 cursor-pointer hover:text-amber-400 transition-colors"
-                        style={{ color: sortKey === "value" ? T.amber : T.textSec }}
-                        onClick={() => handleSort("value")}
-                      >
-                        PRICE <SortIcon k="value" />
-                      </th>
-                      <th className="text-right px-3 py-2" style={{ color: T.textSec }}>NET CHG</th>
-                      <th
-                        className="text-right px-3 py-2 cursor-pointer hover:text-amber-400 transition-colors"
-                        style={{ color: sortKey === "pctChange" ? T.amber : T.textSec }}
-                        onClick={() => handleSort("pctChange")}
-                      >
-                        %CHG <SortIcon k="pctChange" />
-                      </th>
-                      <th
-                        className="text-right px-3 py-2 cursor-pointer hover:text-amber-400 transition-colors hidden md:table-cell"
-                        style={{ color: sortKey === "vol" ? T.amber : T.textSec }}
-                        onClick={() => handleSort("vol")}
-                      >
-                        VOL% <SortIcon k="vol" />
-                      </th>
-                      <th className="text-right px-3 py-2 hidden sm:table-cell" style={{ color: T.textSec }}>YTD%</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sorted.map((item, idx) => {
-                      const isPos = item.pctChange >= 0;
-                      const isSelected = selectedRow === item.id;
-                      const isFlashing = flashCells[item.id];
-                      const sparkData = genSparkline(item.id.charCodeAt(0) * 13, item.value, 20);
-                      return (
-                        <tr
-                          key={item.id}
-                          onClick={() => setSelectedRow(item.id)}
-                          className="cursor-pointer transition-all duration-300"
-                          style={{
-                            background: isSelected
-                              ? "rgba(245,158,11,0.08)"
-                              : isFlashing
-                              ? "rgba(245,158,11,0.05)"
-                              : idx % 2 === 0 ? T.bg : T.surface,
-                            borderBottom: `1px solid ${T.border}`,
-                            outline: isSelected ? `1px solid rgba(245,158,11,0.3)` : "none",
-                          }}
-                        >
-                          <td className="px-3 py-1.5">
-                            <span style={{ color: T.amber }} className="font-bold">{item.id}</span>
-                          </td>
-                          <td className="px-2 py-1.5 text-center" style={{ color: T.textSec }}>{item.region}</td>
-                          <td className="px-2 py-1.5 text-center">
-                            <Sparkline
-                              data={sparkData}
-                              color={isPos ? T.green : T.red}
-                              width={72}
-                              height={18}
-                            />
-                          </td>
-                          <td className="px-3 py-1.5 text-right" style={{ color: "#f5f5b8" }}>
-                            {item.value.toFixed(2)}
-                          </td>
-                          <td className="px-3 py-1.5 text-right" style={{ color: isPos ? T.green : T.red }}>
-                            {isPos ? "+" : ""}{item.change.toFixed(3)}
-                          </td>
-                          <td className="px-3 py-1.5 text-right font-bold" style={{ color: isPos ? T.green : T.red }}>
-                            {isPos ? "+" : ""}{item.pctChange.toFixed(2)}%
-                          </td>
-                          <td className="px-3 py-1.5 text-right hidden md:table-cell" style={{ color: T.textSec }}>
-                            {item.vol.toFixed(1)}
-                          </td>
-                          <td className="px-3 py-1.5 text-right hidden sm:table-cell"
-                            style={{ color: item.ytd >= 0 ? T.green : T.red }}>
-                            {item.ytd >= 0 ? "+" : ""}{item.ytd.toFixed(2)}%
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Right: detail chart panel */}
-              <div className="w-full lg:w-72 border-t lg:border-t-0 lg:border-l flex flex-col"
-                style={{ borderColor: T.border, background: T.surface }}>
-                <div className="px-4 pt-4 pb-2 border-b" style={{ borderColor: T.border }}>
-                  <div className="font-mono text-xs" style={{ color: T.amber }}>{selected.id}</div>
-                  <div className="font-mono text-xl font-bold mt-1" style={{ color: "#f5f5b8" }}>
-                    {selected.value.toFixed(2)}
-                  </div>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="font-mono text-sm font-bold"
-                      style={{ color: selected.pctChange >= 0 ? T.green : T.red }}>
-                      {selected.pctChange >= 0 ? "▲" : "▼"} {Math.abs(selected.pctChange).toFixed(2)}%
-                    </span>
-                    <span className="font-mono text-xs" style={{ color: T.textSec }}>
-                      {selected.pctChange >= 0 ? "+" : ""}{selected.change.toFixed(3)}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Area chart */}
-                <div className="px-2 pt-3 pb-1">
-                  <div className="font-mono text-xs mb-2 px-2" style={{ color: T.textSec }}>30-DAY PRICE</div>
-                  <ResponsiveContainer width="100%" height={100}>
-                    <AreaChart data={chartData} margin={{ top: 2, right: 4, left: -20, bottom: 0 }}>
-                      <defs>
-                        <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor={selected.pctChange >= 0 ? T.green : T.red} stopOpacity={0.4} />
-                          <stop offset="95%" stopColor={selected.pctChange >= 0 ? T.green : T.red} stopOpacity={0.02} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="2 4" stroke={T.border} />
-                      <XAxis dataKey="t" hide />
-                      <YAxis tick={{ fontSize: 9, fill: T.textSec }} tickLine={false} axisLine={false} domain={["dataMin - 1", "dataMax + 1"]} />
-                      <Tooltip
-                        contentStyle={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 4, fontSize: 10, fontFamily: "monospace", color: T.text }}
-                        formatter={(v: number) => [v.toFixed(2), selected.id]}
-                        labelFormatter={() => ""}
-                      />
-                      <Area type="monotone" dataKey="v" stroke={selected.pctChange >= 0 ? T.green : T.red} strokeWidth={1.5} fill="url(#areaGrad)" dot={false} isAnimationActive={false} />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-
-                {/* Vol chart */}
-                <div className="px-2 pb-3">
-                  <div className="font-mono text-xs mb-1 px-2" style={{ color: T.textSec }}>IMPLIED VOL</div>
-                  <ResponsiveContainer width="100%" height={60}>
-                    <BarChart data={volData} margin={{ top: 0, right: 4, left: -20, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="2 4" stroke={T.border} />
-                      <XAxis dataKey="t" hide />
-                      <YAxis tick={{ fontSize: 9, fill: T.textSec }} tickLine={false} axisLine={false} />
-                      <Bar dataKey="v" fill={T.amberDim} radius={[1, 1, 0, 0]} isAnimationActive={false} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-
-                {/* Stats */}
-                <div className="mt-auto border-t px-4 py-3 grid grid-cols-2 gap-2" style={{ borderColor: T.border }}>
-                  {[
-                    { label: "52W HIGH", value: (selected.value * 1.18).toFixed(2) },
-                    { label: "52W LOW",  value: (selected.value * 0.78).toFixed(2) },
-                    { label: "VOL (30D)", value: `${selected.vol.toFixed(1)}%` },
-                    { label: "YTD",      value: `${selected.ytd >= 0 ? "+" : ""}${selected.ytd.toFixed(2)}%` },
-                  ].map(s => (
-                    <div key={s.label}>
-                      <div className="font-mono text-[10px]" style={{ color: T.textSec }}>{s.label}</div>
-                      <div className="font-mono text-xs font-bold" style={{ color: T.text }}>{s.value}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ── NEWS VIEW ───────────────────────────────────────────── */}
-          {view === "news" && (
-            <div className="p-0">
-              <div className="px-4 py-2 border-b font-mono text-xs flex items-center gap-2"
-                style={{ background: T.surface, borderColor: T.border, color: T.amber }}>
-                <Newspaper className="w-3.5 h-3.5" />
-                ENERGY MARKET NEWS — REAL-TIME FEED
-              </div>
-              <div>
-                {NEWS_ITEMS.map((item, i) => (
-                  <div
-                    key={i}
-                    className="flex items-start gap-3 px-4 py-3 border-b transition-colors hover:bg-white/[0.02] cursor-pointer"
-                    style={{ borderColor: T.border }}
+        {/* Terminal */}
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          viewport={{ once: true }}
+          className="rounded-2xl overflow-hidden border border-white/10 bg-background/40 backdrop-blur-2xl shadow-2xl shadow-black/80 max-w-6xl mx-auto"
+        >
+          {/* Top Bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between px-6 py-4 border-b border-white/10 bg-white/[0.02]">
+            <div className="flex items-center gap-6 mb-4 sm:mb-0 overflow-x-auto no-scrollbar">
+              {([
+                { key: "overview", label: "Market Overview", icon: Activity },
+                { key: "analytics", label: "Deep Analytics", icon: BarChart2 },
+                { key: "execution", label: "Execution Engine", icon: Zap },
+              ] as const).map((tab) => {
+                const Icon = tab.icon;
+                const active = view === tab.key;
+                return (
+                  <button
+                    key={tab.key}
+                    onClick={() => setView(tab.key)}
+                    className={`flex items-center gap-2 pb-1 transition-all border-b-2 font-sans text-sm font-medium whitespace-nowrap ${
+                      active ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
+                    }`}
                   >
-                    <span className="font-mono text-xs shrink-0 mt-0.5" style={{ color: T.textSec }}>{item.time}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-mono text-xs leading-relaxed" style={{ color: T.text }}>{item.headline}</p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="font-mono text-[10px] px-1.5 py-0.5 rounded"
-                        style={{ background: T.border, color: T.amber }}>{item.tag}</span>
-                      <span className="font-mono text-[10px] px-1.5 py-0.5 rounded"
-                        style={{
-                          background: item.impact === "bullish" ? "rgba(34,197,94,0.15)" : item.impact === "bearish" ? "rgba(239,68,68,0.15)" : "rgba(100,100,120,0.2)",
-                          color: item.impact === "bullish" ? T.green : item.impact === "bearish" ? T.red : T.textSec,
-                        }}>
-                        {item.impact.toUpperCase()}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ── MOVERS VIEW ─────────────────────────────────────────── */}
-          {view === "movers" && (
-            <div className="p-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Top gainers */}
-                <div className="rounded-lg overflow-hidden border" style={{ borderColor: T.border }}>
-                  <div className="px-3 py-2 font-mono text-xs font-bold flex items-center gap-2"
-                    style={{ background: T.surface, color: T.green }}>
-                    <TrendingUp className="w-3.5 h-3.5" />
-                    TOP GAINERS
-                  </div>
-                  {[...OIL_MARKETS].sort((a, b) => b.pctChange - a.pctChange).slice(0, 5).map((item, i) => (
-                    <div key={item.id} className="flex items-center justify-between px-3 py-2 border-b"
-                      style={{ borderColor: T.border, background: i % 2 === 0 ? T.bg : T.surface }}>
-                      <div>
-                        <div className="font-mono text-xs font-bold" style={{ color: T.amber }}>{item.id}</div>
-                        <div className="font-mono text-[10px]" style={{ color: T.textSec }}>{item.region}</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-mono text-xs font-bold" style={{ color: T.green }}>
-                          +{item.pctChange.toFixed(2)}%
-                        </div>
-                        <div className="font-mono text-[10px]" style={{ color: T.textSec }}>
-                          {item.value.toFixed(2)}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                {/* Top losers */}
-                <div className="rounded-lg overflow-hidden border" style={{ borderColor: T.border }}>
-                  <div className="px-3 py-2 font-mono text-xs font-bold flex items-center gap-2"
-                    style={{ background: T.surface, color: T.red }}>
-                    <TrendingDown className="w-3.5 h-3.5" />
-                    TOP DECLINERS
-                  </div>
-                  {[...OIL_MARKETS].sort((a, b) => a.pctChange - b.pctChange).slice(0, 5).map((item, i) => (
-                    <div key={item.id} className="flex items-center justify-between px-3 py-2 border-b"
-                      style={{ borderColor: T.border, background: i % 2 === 0 ? T.bg : T.surface }}>
-                      <div>
-                        <div className="font-mono text-xs font-bold" style={{ color: T.amber }}>{item.id}</div>
-                        <div className="font-mono text-[10px]" style={{ color: T.textSec }}>{item.region}</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-mono text-xs font-bold" style={{ color: T.red }}>
-                          {item.pctChange.toFixed(2)}%
-                        </div>
-                        <div className="font-mono text-[10px]" style={{ color: T.textSec }}>
-                          {item.value.toFixed(2)}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Spread chart */}
-              <div className="mt-4 rounded-lg border p-4" style={{ borderColor: T.border, background: T.surface }}>
-                <div className="font-mono text-xs font-bold mb-3" style={{ color: T.amber }}>
-                  WTI / BRENT SPREAD — 30 DAY
-                </div>
-                <ResponsiveContainer width="100%" height={120}>
-                  <LineChart data={Array.from({ length: 30 }, (_, i) => {
-                    const wti = genSparkline(42, 78.42, 30)[i];
-                    const brent = genSparkline(99, 82.15, 30)[i];
-                    return { t: i, spread: +(brent - wti).toFixed(2) };
-                  })} margin={{ top: 4, right: 8, left: -10, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="2 4" stroke={T.border} />
-                    <XAxis dataKey="t" hide />
-                    <YAxis tick={{ fontSize: 9, fill: T.textSec }} tickLine={false} axisLine={false} />
-                    <Tooltip
-                      contentStyle={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 4, fontSize: 10, fontFamily: "monospace", color: T.text }}
-                      formatter={(v: number) => [`$${v.toFixed(2)}`, "Spread"]}
-                      labelFormatter={() => ""}
-                    />
-                    <Line type="monotone" dataKey="spread" stroke={T.amber} strokeWidth={1.5} dot={false} isAnimationActive={false} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          )}
-
-          {/* ── VOLATILITY VIEW ─────────────────────────────────────── */}
-          {view === "volatility" && (
-            <div className="p-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {/* Vol surface table */}
-                <div className="rounded-lg overflow-hidden border" style={{ borderColor: T.border }}>
-                  <div className="px-3 py-2 font-mono text-xs font-bold"
-                    style={{ background: T.surface, color: T.amber }}>
-                    IMPLIED VOLATILITY SURFACE
-                  </div>
-                  <table className="w-full font-mono text-xs" style={{ color: T.text }}>
-                    <thead>
-                      <tr style={{ background: T.surface, borderBottom: `1px solid ${T.border}` }}>
-                        <th className="text-left px-3 py-1.5" style={{ color: T.textSec }}>INSTRUMENT</th>
-                        <th className="text-right px-2 py-1.5" style={{ color: T.textSec }}>1M</th>
-                        <th className="text-right px-2 py-1.5" style={{ color: T.textSec }}>3M</th>
-                        <th className="text-right px-2 py-1.5" style={{ color: T.textSec }}>6M</th>
-                        <th className="text-right px-3 py-1.5" style={{ color: T.textSec }}>1Y</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {OIL_MARKETS.slice(0, 6).map((item, i) => {
-                        const base = item.vol;
-                        return (
-                          <tr key={item.id} style={{ background: i % 2 === 0 ? T.bg : T.surface, borderBottom: `1px solid ${T.border}` }}>
-                            <td className="px-3 py-1.5 font-bold" style={{ color: T.amber }}>{item.id}</td>
-                            <td className="px-2 py-1.5 text-right">{base.toFixed(1)}%</td>
-                            <td className="px-2 py-1.5 text-right">{(base * 0.92).toFixed(1)}%</td>
-                            <td className="px-2 py-1.5 text-right">{(base * 0.87).toFixed(1)}%</td>
-                            <td className="px-3 py-1.5 text-right">{(base * 0.82).toFixed(1)}%</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Vol chart */}
-                <div className="rounded-lg border p-4" style={{ borderColor: T.border, background: T.surface }}>
-                  <div className="font-mono text-xs font-bold mb-3" style={{ color: T.amber }}>
-                    WTI 30-DAY REALIZED VOL
-                  </div>
-                  <ResponsiveContainer width="100%" height={180}>
-                    <AreaChart data={genVolData(77, 30)} margin={{ top: 4, right: 8, left: -10, bottom: 0 }}>
-                      <defs>
-                        <linearGradient id="volGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor={T.amber} stopOpacity={0.4} />
-                          <stop offset="95%" stopColor={T.amber} stopOpacity={0.02} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="2 4" stroke={T.border} />
-                      <XAxis dataKey="t" hide />
-                      <YAxis tick={{ fontSize: 9, fill: T.textSec }} tickLine={false} axisLine={false} />
-                      <Tooltip
-                        contentStyle={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 4, fontSize: 10, fontFamily: "monospace", color: T.text }}
-                        formatter={(v: number) => [`${v.toFixed(1)}%`, "Realized Vol"]}
-                        labelFormatter={() => ""}
-                      />
-                      <Area type="monotone" dataKey="v" stroke={T.amber} strokeWidth={1.5} fill="url(#volGrad)" dot={false} isAnimationActive={false} />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Terminal status bar */}
-          <div className="flex items-center justify-between px-4 py-1.5 border-t"
-            style={{ background: T.header, borderColor: T.border }}>
-            <div className="flex items-center gap-4">
-              <span className="font-mono text-[10px]" style={{ color: T.textSec }}>
-                {OIL_MARKETS.length} INSTRUMENTS
-              </span>
-              <span className="font-mono text-[10px]" style={{ color: T.textSec }}>
-                {OIL_MARKETS.filter(m => m.pctChange > 0).length} UP · {OIL_MARKETS.filter(m => m.pctChange < 0).length} DOWN
-              </span>
+                    <Icon className={`w-4 h-4 ${active ? "text-primary" : ""}`} />
+                    {tab.label}
+                  </button>
+                );
+              })}
             </div>
             <div className="flex items-center gap-3">
-              <span className="font-mono text-[10px]" style={{ color: T.amberDim }}>
-                AETHER ENERGY v2.1
-              </span>
-              <span className="font-mono text-[10px]" style={{ color: T.textSec }}>
-                DATA DELAYED 15MIN
+              <span className="flex items-center gap-2 text-xs font-sans text-muted-foreground">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-glow" />
+                System Online
               </span>
             </div>
           </div>
-        </div>
 
-        {/* Caption */}
-        <p className="mt-4 text-center text-white/30 text-xs font-mono">
-          Terminal UI adapted from Bloomberg Terminal design patterns · All data is simulated for demonstration purposes
-        </p>
+          {/* Content */}
+          <div className="p-6 md:p-8 min-h-[480px]">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={view}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
+              >
+                {/* ===== OVERVIEW TAB ===== */}
+                {view === "overview" && (
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-1 space-y-3">
+                      <h3 className="text-sm font-sans font-semibold text-foreground flex items-center gap-2">
+                        <TrendingUp className="w-4 h-4 text-primary" /> Global Benchmarks
+                      </h3>
+                      <div className="space-y-2">
+                        {OIL_MARKETS.map((market) => (
+                          <div key={market.id} className="p-3 rounded-xl bg-white/[0.03] border border-white/5 hover:bg-white/[0.05] transition-colors group cursor-pointer">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <div className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">{market.id}</div>
+                                <div className="text-[10px] text-muted-foreground uppercase tracking-widest">{market.region}</div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-sm font-mono text-foreground">${market.value.toFixed(2)}</div>
+                                <div className={`text-xs font-mono font-medium ${market.pctChange >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                                  {market.pctChange >= 0 ? "+" : ""}{market.pctChange}%
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="lg:col-span-2 flex flex-col">
+                      <div className="p-5 rounded-xl bg-white/[0.02] border border-white/5 flex-1 flex flex-col">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0 mb-4">
+                          <div>
+                            <h3 className="text-xl font-display font-bold text-foreground">{selected.id}</h3>
+                            <p className="text-sm text-muted-foreground font-sans mt-1">Real-time composite pricing</p>
+                          </div>
+                          <div className="sm:text-right">
+                            <div className="text-2xl sm:text-3xl font-display font-bold text-foreground">${selected.value.toFixed(2)}</div>
+                            <div className="text-emerald-400 font-mono text-sm">+0.92% Today</div>
+                          </div>
+                        </div>
+                        <div className="flex-1 min-h-[250px]">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                              <defs>
+                                <linearGradient id="glowGrad" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="5%" stopColor={T.amber} stopOpacity={0.3} />
+                                  <stop offset="95%" stopColor={T.amber} stopOpacity={0.0} />
+                                </linearGradient>
+                              </defs>
+                              <CartesianGrid strokeDasharray="3 3" stroke={T.border} vertical={false} />
+                              <XAxis dataKey="t" hide />
+                              <YAxis tick={{ fontSize: 10, fill: T.textSec }} tickLine={false} axisLine={false} domain={["dataMin - 1", "dataMax + 1"]} />
+                              <Tooltip
+                                contentStyle={{ background: "rgba(10,10,14,0.9)", border: `1px solid ${T.border}`, borderRadius: "8px", color: "#f8fafc" }}
+                                itemStyle={{ color: T.amber }}
+                                formatter={(v: number) => [`$${v.toFixed(2)}`, "Price"]}
+                                labelFormatter={() => ""}
+                              />
+                              <Area type="monotone" dataKey="v" stroke={T.amber} strokeWidth={2.5} fill="url(#glowGrad)" dot={false} />
+                            </AreaChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ===== ANALYTICS TAB ===== */}
+                {view === "analytics" && (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Volatility Surface */}
+                    <div className="p-5 rounded-xl bg-white/[0.02] border border-white/5">
+                      <h3 className="text-sm font-sans font-semibold text-foreground mb-1 flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 text-amber-400" /> Volatility Surface
+                      </h3>
+                      <p className="text-[11px] text-muted-foreground mb-4">Implied vs Historical Volatility by Tenor</p>
+                      <ResponsiveContainer width="100%" height={220}>
+                        <BarChart data={volSurface} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke={T.border} vertical={false} />
+                          <XAxis dataKey="tenor" tick={{ fontSize: 10, fill: T.textSec }} tickLine={false} axisLine={false} />
+                          <YAxis tick={{ fontSize: 10, fill: T.textSec }} tickLine={false} axisLine={false} domain={[10, 35]} />
+                          <Tooltip contentStyle={{ background: "rgba(10,10,14,0.9)", border: `1px solid ${T.border}`, borderRadius: "8px", color: "#f8fafc", fontSize: 11 }} />
+                          <Bar dataKey="iv" fill="#f59e0b" fillOpacity={0.7} radius={[2, 2, 0, 0]} name="Implied Vol" />
+                          <Bar dataKey="hv" fill="#60a5fa" fillOpacity={0.5} radius={[2, 2, 0, 0]} name="Historical Vol" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                      <div className="flex items-center gap-4 mt-3">
+                        <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-sm bg-amber-500/70" /><span className="text-[10px] text-muted-foreground">Implied Vol</span></div>
+                        <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-sm bg-blue-400/50" /><span className="text-[10px] text-muted-foreground">Historical Vol</span></div>
+                      </div>
+                    </div>
+
+                    {/* Correlation Matrix */}
+                    <div className="p-5 rounded-xl bg-white/[0.02] border border-white/5">
+                      <h3 className="text-sm font-sans font-semibold text-foreground mb-1 flex items-center gap-2">
+                        <BarChart2 className="w-4 h-4 text-blue-400" /> Cross-Asset Correlation
+                      </h3>
+                      <p className="text-[11px] text-muted-foreground mb-4">30-day rolling correlation matrix</p>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-[11px]">
+                          <thead>
+                            <tr>
+                              <th className="p-2 text-left text-muted-foreground font-mono"></th>
+                              {corrAssets.map((a) => (
+                                <th key={a} className="p-2 text-center text-muted-foreground font-mono font-bold">{a}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {corrAssets.map((a, i) => (
+                              <tr key={a}>
+                                <td className="p-2 text-muted-foreground font-mono font-bold">{a}</td>
+                                {corrAssets.map((b, j) => {
+                                  const val = i <= j ? corrMatrix[i][j] : corrMatrix[j][i];
+                                  const intensity = Math.abs(val);
+                                  const bg = val === 1
+                                    ? "bg-primary/20 text-primary"
+                                    : val > 0.7
+                                    ? "bg-emerald-500/20 text-emerald-400"
+                                    : val > 0.4
+                                    ? "bg-blue-500/15 text-blue-400"
+                                    : "bg-white/5 text-muted-foreground";
+                                  return (
+                                    <td key={b} className={`p-2 text-center font-mono rounded ${bg}`}>
+                                      {val.toFixed(2)}
+                                    </td>
+                                  );
+                                })}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* Regime Detection */}
+                    <div className="lg:col-span-2 p-5 rounded-xl bg-white/[0.02] border border-white/5">
+                      <h3 className="text-sm font-sans font-semibold text-foreground mb-1 flex items-center gap-2">
+                        <Activity className="w-4 h-4 text-emerald-400" /> Market Regime Detection
+                      </h3>
+                      <p className="text-[11px] text-muted-foreground mb-4">AI-driven regime classification with confidence scores</p>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {[
+                          { regime: "Low Vol Trend", confidence: 82, icon: "📊", assets: "CL, BZ", color: "text-emerald-400" },
+                          { regime: "High Vol Range", confidence: 67, icon: "⚡", assets: "NG", color: "text-amber-400" },
+                          { regime: "Risk-Off", confidence: 45, icon: "🛡️", assets: "GC, SI", color: "text-blue-400" },
+                          { regime: "Mean Revert", confidence: 71, icon: "🔄", assets: "HG, ZW", color: "text-purple-400" },
+                        ].map((r) => (
+                          <div key={r.regime} className="p-3 rounded-lg bg-white/[0.03] border border-white/5">
+                            <div className="text-lg mb-1">{r.icon}</div>
+                            <div className="text-xs font-semibold text-foreground mb-1">{r.regime}</div>
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 h-1.5 rounded-full bg-white/5 overflow-hidden">
+                                <div className={`h-full rounded-full ${r.color === "text-emerald-400" ? "bg-emerald-500" : r.color === "text-amber-400" ? "bg-amber-500" : r.color === "text-blue-400" ? "bg-blue-500" : "bg-purple-500"}`} style={{ width: `${r.confidence}%` }} />
+                              </div>
+                              <span className={`text-[10px] font-mono font-bold ${r.color}`}>{r.confidence}%</span>
+                            </div>
+                            <div className="text-[9px] text-muted-foreground mt-1.5 font-mono">{r.assets}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ===== EXECUTION TAB ===== */}
+                {view === "execution" && (
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Order Book */}
+                    <div className="lg:col-span-1 p-5 rounded-xl bg-white/[0.02] border border-white/5">
+                      <h3 className="text-sm font-sans font-semibold text-foreground mb-4 flex items-center gap-2">
+                        <Zap className="w-4 h-4 text-amber-400" /> Order Book — WTI
+                      </h3>
+                      {/* Asks */}
+                      <div className="space-y-1 mb-3">
+                        {[...orderBook.asks].reverse().map((ask, i) => (
+                          <div key={i} className="flex items-center gap-2 text-[11px] font-mono relative">
+                            <div className="absolute right-0 top-0 bottom-0 bg-red-500/10 rounded" style={{ width: `${(ask.total / 500) * 100}%` }} />
+                            <span className="text-red-400 relative z-10 w-16">${ask.price.toFixed(2)}</span>
+                            <span className="text-muted-foreground relative z-10 flex-1 text-right">{ask.size}</span>
+                          </div>
+                        ))}
+                      </div>
+                      {/* Spread */}
+                      <div className="flex items-center justify-between py-2 border-y border-white/5">
+                        <span className="text-[11px] font-mono text-primary font-bold">${selected.value.toFixed(2)}</span>
+                        <span className="text-[9px] font-mono text-muted-foreground">Spread: $0.03</span>
+                      </div>
+                      {/* Bids */}
+                      <div className="space-y-1 mt-3">
+                        {orderBook.bids.map((bid, i) => (
+                          <div key={i} className="flex items-center gap-2 text-[11px] font-mono relative">
+                            <div className="absolute right-0 top-0 bottom-0 bg-emerald-500/10 rounded" style={{ width: `${(bid.total / 500) * 100}%` }} />
+                            <span className="text-emerald-400 relative z-10 w-16">${bid.price.toFixed(2)}</span>
+                            <span className="text-muted-foreground relative z-10 flex-1 text-right">{bid.size}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Execution Stats + Recent Fills */}
+                    <div className="lg:col-span-2 space-y-5">
+                      {/* Execution metrics */}
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+                        {[
+                          { label: "Avg Fill Time", value: "12ms", color: "text-emerald-400" },
+                          { label: "Slippage", value: "0.2bps", color: "text-blue-400" },
+                          { label: "Fill Rate", value: "99.7%", color: "text-primary" },
+                          { label: "Active Venues", value: "4", color: "text-purple-400" },
+                        ].map((m) => (
+                          <div key={m.label} className="p-3 rounded-xl bg-white/[0.03] border border-white/5">
+                            <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">{m.label}</div>
+                            <div className={`text-lg font-display font-bold ${m.color}`}>{m.value}</div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Recent fills */}
+                      <div className="p-5 rounded-xl bg-white/[0.02] border border-white/5">
+                        <h3 className="text-sm font-sans font-semibold text-foreground mb-4 flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-muted-foreground" /> Recent Executions
+                        </h3>
+                        <div className="space-y-2">
+                          {[
+                            { time: "14:22:18", action: "SELL", symbol: "CL", price: 73.12, qty: 10, status: "filled", pnl: 1670 },
+                            { time: "11:45:33", action: "BUY COVER", symbol: "GC", price: 2049.20, qty: 3, status: "filled", pnl: -2670 },
+                            { time: "10:15:22", action: "BUY", symbol: "NG", price: 3.18, qty: 20, status: "filled", pnl: null },
+                            { time: "09:31:02", action: "SELL SHORT", symbol: "CL", price: 73.80, qty: 8, status: "filled", pnl: null },
+                            { time: "09:30:15", action: "BUY", symbol: "SI", price: 24.08, qty: 15, status: "filled", pnl: null },
+                          ].map((fill, i) => (
+                            <div key={i} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-1 h-6 rounded-full ${fill.action.includes("BUY") ? "bg-emerald-500" : "bg-red-500"}`} />
+                                <div>
+                                  <div className="text-xs font-mono text-foreground">{fill.action} {fill.symbol}</div>
+                                  <div className="text-[10px] text-muted-foreground font-mono">{fill.time}</div>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-xs font-mono text-foreground">${fill.price.toFixed(2)} × {fill.qty}</div>
+                                {fill.pnl !== null && (
+                                  <div className={`text-[10px] font-mono font-bold ${fill.pnl >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                                    {fill.pnl >= 0 ? "+" : ""}${fill.pnl.toLocaleString()}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Connected Venues */}
+                      <div className="p-5 rounded-xl bg-white/[0.02] border border-white/5">
+                        <h3 className="text-sm font-sans font-semibold text-foreground mb-4">Connected Venues</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          {[
+                            { name: "Interactive Brokers", status: "connected", latency: "8ms" },
+                            { name: "CME Group", status: "connected", latency: "12ms" },
+                            { name: "ICE", status: "connected", latency: "15ms" },
+                            { name: "Eurex", status: "standby", latency: "—" },
+                          ].map((v) => (
+                            <div key={v.name} className="p-3 rounded-lg bg-white/[0.03] border border-white/5">
+                              <div className="flex items-center gap-2 mb-2">
+                                <div className={`w-2 h-2 rounded-full ${v.status === "connected" ? "bg-emerald-500" : "bg-yellow-500/50"}`} />
+                                <span className="text-xs font-semibold text-foreground">{v.name}</span>
+                              </div>
+                              <div className="text-[10px] text-muted-foreground font-mono">{v.latency}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </motion.div>
       </div>
     </section>
   );

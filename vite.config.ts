@@ -16,14 +16,34 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/recharts')) return 'vendor-recharts';
+          if (id.includes('node_modules/framer-motion')) return 'vendor-framer';
+          if (id.includes('node_modules/@radix-ui')) return 'vendor-radix';
+        },
+      },
+    },
   },
   server: {
-    port: 3000,
+    port: 5688,
     host: true,
     allowedHosts: ["localhost", "127.0.0.1", ".aether-energy.ai"],
     fs: {
       strict: true,
       deny: ["**/.*"],
+    },
+    proxy: {
+      "/api": {
+        target: "http://localhost:3000",
+        changeOrigin: true,
+        secure: false,
+      },
+      "/ws": {
+        target: "ws://localhost:3000",
+        ws: true,
+      },
     },
   },
 });

@@ -4,6 +4,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line,
 } from "recharts";
+import { api } from "@/lib/api";
 
 interface BenchmarkResult {
   id: string; agentId: string; agentName: string; testCase: string;
@@ -38,11 +39,8 @@ export default function BenchmarkPanel() {
   const fetchBenchmark = useCallback(async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("aether_token");
-      const res = await fetch("/api/agents/benchmark", {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (res.ok) setData(await res.json());
+      const data = await api.benchmark.list();
+      setData(data);
     } catch { /* ignore */ }
     finally { setLoading(false); }
   }, []);

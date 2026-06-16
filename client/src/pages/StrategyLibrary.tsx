@@ -223,7 +223,7 @@ export default function StrategyLibrary() {
                         variant="outline"
                         size="sm"
                         className="text-xs font-display"
-                        onClick={() => setLocation("/backtest")}
+                        onClick={() => setLocation("/dashboard/backtest")}
                       >
                         <Play className="w-3 h-3 mr-1" />
                         Re-run
@@ -249,7 +249,7 @@ export default function StrategyLibrary() {
                         <DropdownMenuContent align="end" className="bg-popover border-border">
                           <DropdownMenuItem
                             className="text-xs"
-                            onClick={() => setLocation("/optimization")}
+                            onClick={() => setLocation("/dashboard/optimization")}
                           >
                             <Target className="w-3 h-3 mr-2" />
                             Optimize

@@ -51,8 +51,8 @@ export default function Footer() {
               <img src="/logo.png" alt="Aether Energy" className="h-8 w-auto" />
             </div>
             <p className="text-white/45 text-sm leading-relaxed max-w-xs mb-6">
-              The element of intelligent oil trading. AI-powered no-code strategies
-              for institutional and sophisticated traders.
+              The quantitative edge for energy markets. AI-powered strategies
+              built by traders, for traders — no terminal required.
             </p>
             {/* Social links */}
             <div className="flex items-center gap-3">

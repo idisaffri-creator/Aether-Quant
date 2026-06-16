@@ -10,34 +10,34 @@ const steps = [
   {
     number: "01",
     icon: UserPlus,
-    title: "Sign Up & Risk Profile",
+    title: "Sign Up & Configure Risk Profile",
     description:
-      "Create your account in minutes. Complete a guided risk assessment and compliance onboarding to ensure the platform is configured for your trading profile and regulatory requirements.",
-    detail: "Takes less than 5 minutes",
+      "Create your account and set your risk parameters — max position size, drawdown limits, and preferred instruments. Compliance checks run in the background.",
+    detail: "Under 5 minutes to start",
   },
   {
     number: "02",
     icon: Layers,
-    title: "Build Your Strategy",
+    title: "Build Your Quant Strategy Visually",
     description:
-      "Choose from 50+ oil market strategy templates or build from scratch using the visual drag-and-drop canvas. Configure entry signals, exit conditions, position sizing, and risk parameters.",
-    detail: "No coding required",
+      "Start from a template or wire your own logic on the visual canvas — connect entry signals, risk gates, and execution triggers by arranging blocks on a directed graph.",
+    detail: "Visual strategy builder",
   },
   {
     number: "03",
     icon: FlaskConical,
-    title: "Backtest & Optimize",
+    title: "Backtest, Validate, Optimise",
     description:
-      "Run your strategy against 10 years of historical WTI and Brent data. Review performance metrics — Sharpe ratio, max drawdown, win rate — and let the AI suggest optimizations.",
-    detail: "Results in under 30 seconds",
+      "Run against 10 years of WTI/Brent ticks with realistic slippage. Review Sharpe, max drawdown, and win rate. Run Monte Carlo to stress-test across 10,000 simulated paths. Let AI optimise parameters.",
+    detail: "Full results in seconds",
   },
   {
     number: "04",
     icon: Rocket,
-    title: "Deploy & Monitor",
+    title: "Deploy & Monitor Live",
     description:
-      "Start with paper trading to validate performance, then go live with your broker integration. Monitor positions, P&L, and risk metrics in real time from your dashboard.",
-    detail: "Paper trading always available",
+      "Go live via Interactive Brokers, ICE, or CME with one click. Monitor positions, P&L, and risk exposure in real time. Set circuit breakers to auto-reduce if drawdown limits are breached.",
+    detail: "Paper trade first, then deploy",
   },
 ];
 
@@ -64,13 +64,14 @@ export default function HowItWorksSection() {
         <div className={`max-w-2xl mb-20 transition-all duration-700 ${inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
           <div className="section-number mb-3">04 — Process</div>
           <h2 className="font-display text-4xl lg:text-5xl font-700 text-white leading-tight mb-4">
-            From Idea to{" "}
-            <span className="text-amber-400">Live Strategy</span>
+            From Concept to{" "}
+            <span className="text-amber-400">Live Execution</span>
             <br />in Four Steps
           </h2>
           <p className="text-white/55 text-lg leading-relaxed">
-            Aether's guided workflow takes you from account creation to a
-            live-deployed trading strategy in a single session.
+            Aether's guided workflow takes you from account creation to
+            a live-deployed quant strategy in a single session — no
+            terminal window required.
           </p>
         </div>
 

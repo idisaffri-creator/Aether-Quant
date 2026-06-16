@@ -5,6 +5,7 @@ import {
   ResponsiveContainer, Tooltip,
 } from "recharts";
 import { BarChart3, Zap, Gauge } from "lucide-react";
+import { api } from "@/lib/api";
 
 interface BenchmarkResult {
   agentId: string; agentName: string; category: string; score: number;
@@ -45,16 +46,11 @@ export default function AgentComparison() {
   const [benchData, setBenchData] = useState<BenchmarkData | null>(null);
 
   useEffect(() => {
-    const fetchData = async () => {
-      const token = localStorage.getItem("aether_token");
-      try {
-        const res = await fetch("/api/agents/benchmark", {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
-        if (res.ok) setBenchData(await res.json());
-      } catch { /* ignore */ }
-    };
-    fetchData();
+    let cancelled = false;
+    api.benchmark.list()
+      .then((data) => { if (!cancelled) setBenchData(data); })
+      .catch(() => { /* ignore */ });
+    return () => { cancelled = true; };
   }, []);
 
   const metrics: AgentMetric[] = agents.map(a => {

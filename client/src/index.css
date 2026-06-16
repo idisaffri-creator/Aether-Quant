@@ -50,7 +50,7 @@
 }
 
 :root {
-  --radius: 0.5rem;
+  --radius: 0.75rem;
   /* Void Terminal Dark Theme */
   --background: oklch(0.12 0.015 250);
   --foreground: oklch(0.9 0.01 250);
