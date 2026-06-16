@@ -34,17 +34,21 @@ if [ "$BUILD" = true ]; then
   pnpm build 2>&1 | tail -3
 fi
 
-echo "--- pm2 reload ---"
-pm2 reload aether 2>/dev/null || pm2 start dist/index.js --name aether -i 1 --time
+echo "--- pm2 reload (with .env via ecosystem) ---"
+pm2 delete aether 2>/dev/null || true
+pm2 start /root/aether-energy/ecosystem.config.cjs
 pm2 save --force
 
 echo
 echo "--- health check ---"
-sleep 2
-HTTP=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/api/health)
-echo "  /api/health: HTTP $HTTP"
+sleep 3
+HTTP=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/live)
+echo "  /live:    HTTP $HTTP"
+HTTP=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/ready)
+echo "  /ready:   HTTP $HTTP"
 if [ "$HTTP" != "200" ]; then
-  echo "  HEALTH CHECK FAILED — rolling back"
+  echo "  HEALTH CHECK FAILED — check pm2 logs"
+  pm2 logs aether --lines 30 --nostream
   exit 1
 fi
 

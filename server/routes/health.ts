@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db } from "../db";
+import { client } from "../db";
 import { redis, isRedisHealthy } from "../lib/redis";
 import { register } from "../lib/metrics";
 
@@ -30,7 +30,7 @@ router.get("/ready", async (_req, res) => {
   const checks: Record<string, { ok: boolean; latencyMs: number; error?: string }> = {};
   const t0 = Date.now();
   try {
-    await db.execute("SELECT 1" as any);
+    await client`SELECT 1`;
     checks.database = { ok: true, latencyMs: Date.now() - t0 };
   } catch (err) {
     checks.database = { ok: false, latencyMs: Date.now() - t0, error: (err as Error).message };
