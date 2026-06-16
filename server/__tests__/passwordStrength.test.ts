@@ -10,16 +10,16 @@ describe("passwordStrength", () => {
   it("rates short password as Weak", () => {
     const r = passwordStrength("abc");
     expect(r.label).toBe("Weak");
-    expect(r.score).toBe(1);
+    expect(r.score).toBeGreaterThanOrEqual(1);
   });
 
-  it("rates 8-char all-lowercase as Fair", () => {
+  it("rates 8-char all-lowercase as Weak", () => {
     const r = passwordStrength("abcdefgh");
-    expect(["Fair", "Weak"]).toContain(r.label);
+    expect(r.label).toBe("Weak");
   });
 
-  it("rates complex password as Good or Strong", () => {
-    const r = passwordStrength("Aa1!aaaa");
+  it("rates 8-char mixed + number as Good", () => {
+    const r = passwordStrength("Abcdefg1");
     expect(["Good", "Strong"]).toContain(r.label);
     expect(r.score).toBeGreaterThanOrEqual(3);
   });

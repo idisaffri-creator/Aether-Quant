@@ -15,6 +15,8 @@ import { requestLogger } from "./middleware/requestLogger";
 import { idempotency } from "./middleware/idempotency";
 import { installShutdown, shutdownMiddleware } from "./lib/shutdown";
 import { logger } from "./lib/logger";
+import { initSentry, Sentry } from "./lib/sentry";
+import { initOtel, shutdownOtel } from "./lib/otel";
 import authRoutes from "./routes/auth";
 import auth2faRoutes from "./routes/auth2fa";
 import gdprRoutes from "./routes/gdpr";
@@ -40,7 +42,8 @@ const __dirname = path.dirname(__filename);
 const REQUIRED_ENV = ["DATABASE_URL", "JWT_SECRET"];
 const OPTIONAL_ENV = [
   "PORT", "CORS_ORIGIN", "LOG_LEVEL", "REDIS_URL", "TRUST_PROXY",
-  "SENTRY_DSN", "ALLOW_REGISTRATION",
+  "SENTRY_DSN", "ALLOW_REGISTRATION", "OTEL_EXPORTER_OTLP_ENDPOINT",
+  "GIT_COMMIT",
 ];
 
 function parseCors(): string | string[] {
@@ -62,13 +65,20 @@ function validateEnv() {
 }
 
 async function startServer() {
+  // Observability first (so even init errors get tracked)
+  initOtel();
+  initSentry();
+
   validateEnv();
   await runMigrations();
   const app = express();
   const server = createServer(app);
   // Trust first proxy hop (Traefik) so req.ip reflects the real client IP
-  // and rate-limiter can validate X-Forwarded-For.
   app.set("trust proxy", 1);
+
+  // Sentry request + error handlers (must be before other middleware)
+  app.use(Sentry.Handlers.requestHandler());
+  app.use(Sentry.Handlers.tracingHandler());
 
   // ─── Observability first (so even errors get logged) ─────────────────
   app.use(requestId);
@@ -183,8 +193,17 @@ async function startServer() {
     res.sendFile(path.join(staticPath, "index.html"));
   });
 
+  // Sentry error handler (must be after all routes)
+  app.use(Sentry.Handlers.errorHandler());
+
   // ─── Graceful shutdown ───────────────────────────────────────────────
   installShutdown(server, wss);
+  // Add OTel + Sentry flush to shutdown
+  process.on("SIGTERM", () => {
+    Promise.allSettled([shutdownOtel(), Sentry.close(2000)]).then(() => {
+      logger.info("observability flushed");
+    });
+  });
 
   const port = process.env.PORT || 3000;
   server.listen(port, () => {
