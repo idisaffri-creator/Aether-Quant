@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Zap, Eye, EyeOff } from "lucide-react";
+import { Zap, Eye, EyeOff, AlertTriangle } from "lucide-react";
 import { usePageTitle } from "@/lib/usePageTitle";
 import { api, setAuthToken } from "@/lib/api";
 import { useSetAtom } from "jotai";
@@ -16,6 +16,13 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [capsLock, setCapsLock] = useState(false);
+
+  const handleKeyEvent = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (typeof e.getModifierState === "function") {
+      setCapsLock(e.getModifierState("CapsLock"));
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,7 +108,11 @@ export default function Login() {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  onKeyUp={handleKeyEvent}
+                  onKeyDown={handleKeyEvent}
+                  onBlur={() => setCapsLock(false)}
                   placeholder="••••••••"
+                  autoComplete="current-password"
                   className="w-full px-3 py-2 pr-9 rounded-lg bg-accent/50 border border-border text-sm focus:outline-none focus:border-amber/50"
                 />
                 <button
@@ -112,6 +123,11 @@ export default function Login() {
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+              {capsLock && (
+                <p className="text-[10px] text-amber mt-1 flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" /> Caps Lock is on
+                </p>
+              )}
             </div>
 
             <button

@@ -23,6 +23,7 @@ import auditRoutes from "./routes/audit";
 import adminMailRoutes from "./routes/adminMail";
 import adminUsersRoutes from "./routes/adminUsers";
 import { setupWebSocket } from "./ws/index";
+import { runMigrations } from "./db";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -44,6 +45,7 @@ function validateEnv() {
 
 async function startServer() {
   validateEnv();
+  await runMigrations();
   const app = express();
   const server = createServer(app);
 

@@ -1,11 +1,34 @@
+export interface UserPreferences {
+  notifications?: {
+    tradeExecutions?: boolean;
+    priceAlerts?: boolean;
+    strategySignals?: boolean;
+    portfolioUpdates?: boolean;
+    emailDigest?: boolean;
+    pushNotifications?: boolean;
+  };
+  appearance?: {
+    theme?: "dark" | "light" | "system";
+    density?: "comfortable" | "compact";
+  };
+  privacy?: {
+    showProfile?: boolean;
+    showActivity?: boolean;
+  };
+}
+
 export interface User {
   id: string;
   email: string;
   username: string;
   walletAddress?: string;
   createdAt: string;
+  lastLoginAt?: string;
   tier: 'free' | 'professional' | 'enterprise' | 'admin';
   role?: 'user' | 'admin';
+  status?: 'active' | 'suspended' | 'pending';
+  emailVerified?: boolean;
+  preferences?: UserPreferences;
 }
 
 export interface Strategy {

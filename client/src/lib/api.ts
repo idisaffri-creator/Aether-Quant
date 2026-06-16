@@ -4,6 +4,7 @@ import type {
   Candle,
   AuthResponse,
   User,
+  UserPreferences,
   WSMessage,
   TradeSignal,
   MailMessage,
@@ -97,6 +98,27 @@ export const api = {
       request<{ valid: boolean; email?: string; expiresAt?: string; code?: string; message?: string }>(
         `/auth/reset-password/validate?token=${encodeURIComponent(token)}`
       ),
+    updateProfile: (data: { email?: string; username?: string; walletAddress?: string | null }) =>
+      request<{ message: string; user: User | null; token: string | null }>("/auth/profile", { method: "PUT", body: JSON.stringify(data) }),
+    changePassword: (data: { currentPassword: string; newPassword: string }) =>
+      request<{ message: string }>("/auth/change-password", { method: "POST", body: JSON.stringify(data) }),
+    getPreferences: () => request<{ preferences: UserPreferences }>("/auth/preferences"),
+    updatePreferences: (data: UserPreferences) =>
+      request<{ preferences: UserPreferences }>("/auth/preferences", { method: "PUT", body: JSON.stringify(data) }),
+    getSession: () =>
+      request<{
+        sessionId: string | null;
+        userId: string;
+        email: string;
+        issuedAt: string | null;
+        expiresAt: string | null;
+        remainingMs: number;
+        ip: string;
+        userAgent: string;
+        browser: string;
+        os: string;
+        device: string;
+      }>("/auth/session"),
   },
   agents: {
     signals: () => request<{ signals: TradeSignal[] }>("/agents/signals"),
@@ -175,6 +197,7 @@ export const api = {
       request<{ message: string; id: string }>(`/admin/mail/snippets/${id}`, { method: "DELETE" }),
 
     drafts: () => request<{ drafts: { id: string; to: string; subject: string; body: string; category: AdminMailCategory; updatedAt: string }[]; total: number }>("/admin/mail/drafts"),
+    getDraft: (id: string) => request<{ draft: { id: string; to: string; subject: string; body: string; category: AdminMailCategory; updatedAt: string } }>(`/admin/mail/drafts/${id}`),
     saveDraft: (data: { id?: string; to: string; subject: string; body: string; category?: AdminMailCategory }) =>
       request<{ draft: { id: string; to: string; subject: string; body: string; category: AdminMailCategory; updatedAt: string } }>("/admin/mail/drafts", { method: "POST", body: JSON.stringify(data) }),
     deleteDraft: (id: string) =>
@@ -222,13 +245,6 @@ export const api = {
       request<{ message: string; id: string }>(`/admin/mail/campaigns/${id}`, { method: "DELETE" }),
 
     stats: () => request<AdminMailStats>("/admin/mail/stats"),
-
-    drafts: () => request<{ drafts: { id: string; to: string; subject: string; body: string; category: AdminMailCategory; updatedAt: string }[]; total: number }>("/admin/mail/drafts"),
-    getDraft: (id: string) => request<{ draft: { id: string; to: string; subject: string; body: string; category: AdminMailCategory; updatedAt: string } }>(`/admin/mail/drafts/${id}`),
-    saveDraft: (data: { id?: string; to: string; subject: string; body: string; category?: AdminMailCategory }) =>
-      request<{ draft: { id: string; to: string; subject: string; body: string; category: AdminMailCategory; updatedAt: string } }>("/admin/mail/drafts", { method: "POST", body: JSON.stringify(data) }),
-    deleteDraft: (id: string) =>
-      request<{ message: string; id: string }>(`/admin/mail/drafts/${id}`, { method: "DELETE" }),
 
     trackOpen: (id: string) => request<{ ok: boolean }>(`/admin/mail/messages/${id}/open`, { method: "POST" }),
     trackClick: (id: string) => request<{ ok: boolean }>(`/admin/mail/messages/${id}/click`, { method: "POST" }),

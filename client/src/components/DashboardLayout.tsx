@@ -390,16 +390,22 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator className="bg-white/5 my-1" />
-                <DropdownMenuItem className="focus:bg-white/[0.05] rounded-lg cursor-pointer gap-3 p-2.5 font-medium text-sm text-foreground/80">
+                <DropdownMenuItem
+                  className="focus:bg-white/[0.05] rounded-lg cursor-pointer gap-3 p-2.5 font-medium text-sm text-foreground/80"
+                  onClick={() => setLocation("/dashboard/settings")}
+                >
                   <User className="w-4 h-4" />
                   Profile Settings
                 </DropdownMenuItem>
-                <DropdownMenuItem className="focus:bg-white/[0.05] rounded-lg cursor-pointer gap-3 p-2.5 font-medium text-sm text-foreground/80">
+                <DropdownMenuItem
+                  className="focus:bg-white/[0.05] rounded-lg cursor-pointer gap-3 p-2.5 font-medium text-sm text-foreground/80"
+                  onClick={() => setLocation("/dashboard/settings")}
+                >
                   <SettingsIcon className="w-4 h-4" />
                   System Preferences
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-white/5 my-1" />
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   className="focus:bg-red-500/10 text-red-400 rounded-lg cursor-pointer gap-3 p-2.5 font-medium text-sm"
                   onClick={handleLogout}
                 >

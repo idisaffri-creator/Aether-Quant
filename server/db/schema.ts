@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, integer, decimal, foreignKey, index } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, integer, decimal, foreignKey, index, jsonb } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
@@ -6,10 +6,33 @@ export const users = pgTable("users", {
   username: text("username").notNull(),
   passwordHash: text("password_hash").notNull(),
   walletAddress: text("wallet_address"),
-  tier: text("tier", { enum: ["free", "professional", "enterprise"] }).default("free").notNull(),
+  tier: text("tier", { enum: ["free", "professional", "enterprise", "admin"] }).default("free").notNull(),
+  status: text("status", { enum: ["active", "suspended", "pending"] }).default("active").notNull(),
+  emailVerified: text("email_verified").default("false").notNull(),
+  lastLoginAt: timestamp("last_login_at"),
+  preferences: jsonb("preferences").$type<UserPreferences>().default({}).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+export interface UserPreferences {
+  notifications?: {
+    tradeExecutions?: boolean;
+    priceAlerts?: boolean;
+    strategySignals?: boolean;
+    portfolioUpdates?: boolean;
+    emailDigest?: boolean;
+    pushNotifications?: boolean;
+  };
+  appearance?: {
+    theme?: "dark" | "light" | "system";
+    density?: "comfortable" | "compact";
+  };
+  privacy?: {
+    showProfile?: boolean;
+    showActivity?: boolean;
+  };
+}
 
 export const strategies = pgTable("strategies", {
   id: text("id").primaryKey(),
