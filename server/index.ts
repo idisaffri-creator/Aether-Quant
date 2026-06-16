@@ -1,6 +1,7 @@
 import express from "express";
 import { createServer } from "http";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 import cors from "cors";
 import helmet from "helmet";
@@ -87,7 +88,7 @@ async function startServer() {
       ? path.resolve(__dirname, "public")
       : path.resolve(__dirname, "..", "dist", "public");
 
-  if (require("fs").existsSync(staticPath)) {
+  if (fs.existsSync(staticPath)) {
     app.use((req, res, next) => {
       if (req.method !== "GET" && req.method !== "HEAD") return next();
       if (req.path === "/" || req.path === "/index.html" || !path.extname(req.path)) {

@@ -1,4 +1,4 @@
-import rateLimit from "express-rate-limit";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 
 const windowMs = parseInt(process.env.RATE_LIMIT_WINDOW_MS || "900000");
 const max = parseInt(process.env.RATE_LIMIT_MAX || "100");
@@ -31,7 +31,7 @@ export const apiLimiter = rateLimit({
 export const bulkLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 10,
-  keyGenerator: (req) => `bulk:${req.user?.userId || req.ip}`,
+  keyGenerator: (req) => `bulk:${req.user?.userId || ipKeyGenerator(req)}`,
   message: { code: "RATE_LIMITED", message: "Too many bulk operations, please wait a moment", status: 429 },
   standardHeaders: true,
   legacyHeaders: false,
@@ -41,7 +41,7 @@ export const bulkLimiter = rateLimit({
 export const sendLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 30,
-  keyGenerator: (req) => `send:${req.user?.userId || req.ip}`,
+  keyGenerator: (req) => `send:${req.user?.userId || ipKeyGenerator(req)}`,
   message: { code: "RATE_LIMITED", message: "Too many send/import operations, please wait", status: 429 },
   standardHeaders: true,
   legacyHeaders: false,
