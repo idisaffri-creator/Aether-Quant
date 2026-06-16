@@ -78,13 +78,31 @@ async function startServer() {
   // WebSocket
   setupWebSocket(server);
 
-  // Static files (production)
+  // Static files (production) with proper cache headers:
+  //   index.html   -> no-cache (always fetch latest, so new chunk hashes are picked up)
+  //   /assets/*    -> 1 year immutable (Vite hashes filenames, safe to cache forever)
+  //   other files  -> 1 hour cache
   const staticPath =
     process.env.NODE_ENV === "production"
       ? path.resolve(__dirname, "public")
       : path.resolve(__dirname, "..", "dist", "public");
 
-  app.use(express.static(staticPath));
+  if (require("fs").existsSync(staticPath)) {
+    app.use((req, res, next) => {
+      if (req.method !== "GET" && req.method !== "HEAD") return next();
+      if (req.path === "/" || req.path === "/index.html" || !path.extname(req.path)) {
+        res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        res.setHeader("Pragma", "no-cache");
+        res.setHeader("Expires", "0");
+      } else if (req.path.startsWith("/assets/")) {
+        res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+      } else {
+        res.setHeader("Cache-Control", "public, max-age=3600");
+      }
+      next();
+    });
+    app.use(express.static(staticPath));
+  }
 
   // SPA fallback
   app.get("*", (_req, res) => {
