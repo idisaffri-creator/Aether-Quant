@@ -1,17 +1,17 @@
 import { Router } from "express";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
-import otplib from "otplib";
+import { TOTP, generateSecret } from "otplib";
 import QRCode from "qrcode";
 import { db, schema } from "../db";
 import { authMiddleware } from "../middleware/auth";
 import { logger } from "../lib/logger";
 import { audit } from "../services/audit";
 
-const { authenticator } = otplib;
 const router = Router();
 
-authenticator.options = { window: 1, step: 30 };
+// One TOTP instance with default params (6 digits, 30s, sha1)
+const totp = new TOTP({ algorithm: "sha1", digits: 6, period: 30, window: 1 });
 
 const verifySchema = z.object({ token: z.string().regex(/^\d{6}$/) });
 const disableSchema = z.object({ password: z.string().min(1) });
@@ -44,8 +44,8 @@ router.post("/setup", authMiddleware, async (req, res) => {
       return;
     }
 
-    const secret = authenticator.generateSecret();
-    const otpauth = authenticator.keyuri(email, "Aether Energy", secret);
+    const secret = generateSecret({ length: 20 });
+    const otpauth = totp.generateURI({ issuer: "Aether Energy", label: email, secret });
     const qrDataUrl = await QRCode.toDataURL(otpauth);
 
     // Stash secret in preferences.twoFactor.pendingSecret until verified
@@ -93,8 +93,8 @@ router.post("/verify", authMiddleware, async (req, res) => {
       res.status(400).json({ code: "NO_PENDING_SETUP", message: "Call /2fa/setup first", status: 400 });
       return;
     }
-    const ok = authenticator.verify({ token: parsed.data.token, secret: pendingSecret });
-    if (!ok) {
+    const delta = totp.verifySync({ token: parsed.data.token, secret: pendingSecret });
+    if (delta === null) {
       res.status(400).json({ code: "INVALID_CODE", message: "TOTP code invalid or expired", status: 400 });
       return;
     }
@@ -134,7 +134,7 @@ router.post("/disable", authMiddleware, async (req, res) => {
       res.status(404).json({ code: "NOT_FOUND", message: "User not found", status: 404 });
       return;
     }
-    const valid = await bcrypt.default.compare(parsed.data.password, rows[0].passwordHash);
+    const valid = await bcrypt.compare(parsed.data.password, rows[0].passwordHash);
     if (!valid) {
       res.status(401).json({ code: "WRONG_PASSWORD", message: "Password incorrect", status: 401 });
       return;
