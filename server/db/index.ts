@@ -7,6 +7,7 @@ const connectionString = process.env.DATABASE_URL || "postgres://localhost:5432/
 const client = postgres(connectionString, { prepare: false });
 
 export const db = drizzle(client, { schema });
+export { client };
 export { schema };
 
 // ─── Lightweight, idempotent auto-migrations ────────────────────────────
