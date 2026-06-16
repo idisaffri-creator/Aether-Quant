@@ -1,13 +1,14 @@
 import { Router } from "express";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
-import { authenticator } from "otplib";
+import otplib from "otplib";
 import QRCode from "qrcode";
 import { db, schema } from "../db";
 import { authMiddleware } from "../middleware/auth";
 import { logger } from "../lib/logger";
 import { audit } from "../services/audit";
 
+const { authenticator } = otplib;
 const router = Router();
 
 authenticator.options = { window: 1, step: 30 };
@@ -127,7 +128,7 @@ router.post("/disable", authMiddleware, async (req, res) => {
       return;
     }
     const userId = req.user!.userId;
-    const bcrypt = await import("bcryptjs");
+    const bcrypt = (await import("bcryptjs")).default;
     const rows = await db.select().from(schema.users).where(eq(schema.users.id, userId)).execute();
     if (rows.length === 0) {
       res.status(404).json({ code: "NOT_FOUND", message: "User not found", status: 404 });

@@ -66,7 +66,9 @@ async function startServer() {
   await runMigrations();
   const app = express();
   const server = createServer(app);
-  app.set("trust proxy", process.env.TRUST_PROXY ? parseInt(process.env.TRUST_PROXY) : 1);
+  // Trust first proxy hop (Traefik) so req.ip reflects the real client IP
+  // and rate-limiter can validate X-Forwarded-For.
+  app.set("trust proxy", 1);
 
   // ─── Observability first (so even errors get logged) ─────────────────
   app.use(requestId);
