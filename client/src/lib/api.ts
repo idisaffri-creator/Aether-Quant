@@ -69,6 +69,12 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   const res = await fetch(`${API_BASE}/api${path}`, { ...options, headers });
 
+  // Global 401 handler: token expired or invalid. Clear it so polling stops.
+  if (res.status === 401 && token) {
+    token = null;
+    try { localStorage.removeItem("aether_token"); } catch {}
+  }
+
   if (!res.ok) {
     const error = await res.json().catch(() => ({ message: res.statusText }));
     throw new Error(error.message || `HTTP ${res.status}`);

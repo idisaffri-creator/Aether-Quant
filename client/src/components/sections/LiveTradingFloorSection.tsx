@@ -3,12 +3,15 @@
  * Replaces the old LiveDataSection. Shows: agents currently working,
  * recent trades, recent signals, marketplace activity.
  *
- * Polls /api/agents/status every 15s for live agent state.
+ * Polls /api/agents/fleet every 15s for live agent state.
  * Polls /api/data/status for feed health.
+ * Skips /api/leaderboard for unauthenticated users (avoids 401 spam).
  */
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Activity, Radio, Zap, Brain, Eye, TrendingUp, TrendingDown, Loader2, Sparkles } from "lucide-react";
+import { useAtomValue } from "jotai";
+import { tokenAtom } from "@/store/auth";
 import { num, money, signedPct } from "@/lib/format";
 
 interface Agent {
@@ -35,6 +38,7 @@ interface Activity {
 }
 
 export default function LiveTradingFloorSection() {
+  const token = useAtomValue(tokenAtom);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [feeds, setFeeds] = useState<Feed[]>([]);
   const [activity, setActivity] = useState<Activity[]>([]);
@@ -44,11 +48,16 @@ export default function LiveTradingFloorSection() {
     let cancelled = false;
     async function load() {
       try {
-        const [fleetRes, feedsRes, leaderRes] = await Promise.all([
+        // Public endpoints — always fetched
+        const [fleetRes, feedsRes] = await Promise.all([
           fetch("/api/agents/fleet").then(r => r.json()).catch(() => ({ fleet: [] })),
           fetch("/api/data/status").then(r => r.json()).catch(() => ({ yahoo: {}, eia: {}, newsapi: {} })),
-          fetch("/api/leaderboard?limit=3", { credentials: "include" }).then(r => r.json()).catch(() => ({ leaderboard: [] })),
         ]);
+
+        // Authenticated endpoint — only fetch if user has a token
+        const leaderRes = token
+          ? await fetch("/api/leaderboard?limit=3", { credentials: "include" }).then(r => r.json()).catch(() => ({ leaderboard: [] }))
+          : { leaderboard: [] };
 
         if (cancelled) return;
 
@@ -105,7 +114,7 @@ export default function LiveTradingFloorSection() {
     load();
     const t = setInterval(load, 15_000);
     return () => { cancelled = true; clearInterval(t); };
-  }, []);
+  }, [token]);
 
   const healthyFeedCount = feeds.filter(f => f.healthy).length;
 

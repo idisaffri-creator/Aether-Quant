@@ -1,12 +1,14 @@
 /**
  * Quick stats bar — shown in nav when authenticated.
  * Fetches portfolio value + 24h P&L from /api/portfolio/analytics.
- * Updates every 30s.
+ * Updates every 30s. Stops polling after a 401 (stale token).
  */
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { TrendingUp, TrendingDown, Loader2, BarChart3 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useAtomValue } from "jotai";
+import { tokenAtom } from "@/store/auth";
 import { num, money, signedPct } from "@/lib/format";
 
 interface Stats {
@@ -17,15 +19,21 @@ interface Stats {
 }
 
 export function QuickStats() {
+  const token = useAtomValue(tokenAtom);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [stopped, setStopped] = useState(false);
 
   useEffect(() => {
+    if (!token || stopped) return;
     let cancelled = false;
     async function load() {
       try {
         const r = await fetch("/api/portfolio/analytics", { credentials: "include" });
-        if (!r.ok) return;
+        if (!r.ok) {
+          if (r.status === 401) setStopped(true);
+          return;
+        }
         const d = await r.json();
         if (!cancelled) setStats(d);
       } catch {
@@ -37,9 +45,9 @@ export function QuickStats() {
     load();
     const t = setInterval(load, 30_000);
     return () => { cancelled = true; clearInterval(t); };
-  }, []);
+  }, [token, stopped]);
 
-  if (loading) {
+  if (loading || !token || stopped) {
     return (
       <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground">
         <Loader2 className="w-3 h-3 animate-spin" />
