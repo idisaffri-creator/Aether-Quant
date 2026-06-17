@@ -11,6 +11,8 @@ import DashboardLayout from "./components/DashboardLayout";
 import IdeaExtractor from "./pages/IdeaExtractor";
 import BacktestResults from "./pages/BacktestResults";
 import StrategyLibrary from "./pages/StrategyLibrary";
+import AIAssistant from "./pages/Dashboard/AIAssistant";
+import Comparison from "./pages/Dashboard/Comparison";
 import Optimization from "./pages/Optimization";
 import AgentWorkforce from "./pages/AgentWorkforce";
 import OutcomeBilling from "./pages/OutcomeBilling";
@@ -81,6 +83,8 @@ function Router() {
                 <Route path="/dashboard/audit" component={Audit} />
                 <Route path="/dashboard/settings" component={Settings} />
                 <Route path="/dashboard/trading" component={Trading} />
+                <Route path="/dashboard/ai" component={AIAssistant} />
+                <Route path="/dashboard/comparison" component={Comparison} />
                 <Route path="/dashboard/admin-mail" component={AdminMail} />
                 <Route path="/dashboard/404" component={NotFound} />
                 <Route component={NotFound} />

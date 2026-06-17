@@ -53,6 +53,10 @@ import calendarRoutes from "./routes/calendar";
 import portfolioRoutes from "./routes/portfolio";
 import aiRoutes from "./routes/ai";
 import comparisonRoutes from "./routes/comparison";
+import searchRoutes from "./routes/search";
+import storageRoutes from "./routes/storage";
+import { initS3 } from "./services/storage/s3";
+import { ensureIndexes, reindexAllStrategies } from "./services/search/meilisearch";
 import { setupWebSocket } from "./ws/index";
 import { runMigrations } from "./db";
 import { startIngest, stopIngest } from "./services/data/ingest";
@@ -196,9 +200,15 @@ async function startServer() {
   app.use("/api/portfolio", portfolioRoutes);
   app.use("/api/ai", aiRoutes);
   app.use("/api/comparison", comparisonRoutes);
+  app.use("/api/search", searchRoutes);
+  app.use("/api/storage", storageRoutes);
   app.use("/api", calendarRoutes);
   app.use("/api", exportRoutes);
   app.use("/api", openapiRoutes);
+
+  // Init external services
+  initS3().catch((err) => logger.warn({ err: err.message }, "S3 init failed"));
+  ensureIndexes().then(() => reindexAllStrategies().catch(() => {})).catch(() => {});
 
   // CSP report collector
   app.post("/api/csp-report", (req, res) => {
