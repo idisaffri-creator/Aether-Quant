@@ -207,6 +207,24 @@ const paths: Record<string, any> = {
   "/api/legal/accept": { post: { summary: "Record acceptance of legal documents", tags: ["Legal"], responses: { "200": { description: "accepted" } } } },
   "/api/legal/acceptances": { get: { summary: "List your acceptance history", tags: ["Legal"], responses: { "200": { description: "list" } } } },
 
+  "/api/ai/chat": { post: { summary: "Chat with Aether AI (OpenAI/Ollama/mock)", tags: ["AI"], requestBody: { content: { "application/json": { schema: { type: "object", properties: { messages: { type: "array" } } } } } }, responses: { "200": { description: "ai response" } } } },
+  "/api/ai/strategy": { post: { summary: "Get strategy recommendation for symbol", tags: ["AI"], requestBody: { content: { "application/json": { schema: { type: "object", properties: { symbol: { type: "string" }, horizonDays: { type: "integer" }, riskTolerance: { type: "string", enum: ["low", "medium", "high"] } } } } } }, responses: { "200": { description: "recommendation" } } } },
+  "/api/ai/status": { get: { summary: "Get AI provider status", tags: ["AI"], responses: { "200": { description: "provider" } } } },
+
+  "/api/comparison/compare": { post: { summary: "Compare 2-10 backtests side-by-side", tags: ["Comparison"], requestBody: { content: { "application/json": { schema: { type: "object", properties: { ids: { type: "array" } } } } } }, responses: { "200": { description: "comparison with rankings + best" } } } },
+
+  "/api/search/strategies": { get: { summary: "Search custom strategies (Meilisearch)", tags: ["Search"], responses: { "200": { description: "hits" } } } },
+  "/api/search/news": { get: { summary: "Search news (Meilisearch)", tags: ["Search"], responses: { "200": { description: "hits" } } } },
+  "/api/search/signals": { get: { summary: "Search signals (Meilisearch)", tags: ["Search"], responses: { "200": { description: "hits" } } } },
+  "/api/search/status": { get: { summary: "Search engine status", tags: ["Search"], responses: { "200": { description: "status" } } } },
+
+  "/api/storage/kyc/upload": { post: { summary: "Upload KYC document (multipart/form-data)", tags: ["Storage"], responses: { "200": { description: "key + location" } } } },
+  "/api/storage/kyc/list": { get: { summary: "List your KYC documents", tags: ["Storage"], responses: { "200": { description: "objects" } } } },
+  "/api/storage/kyc/download-url": { get: { summary: "Get signed download URL for KYC document", tags: ["Storage"], responses: { "200": { description: "url (1h expiry)" } } } },
+  "/api/storage/kyc": { delete: { summary: "Delete a KYC document", tags: ["Storage"], responses: { "200": { description: "ok" } } } },
+  "/api/storage/exports/upload": { post: { summary: "Upload an export (CSV/PDF)", tags: ["Storage"], responses: { "200": { description: "key + location" } } } },
+  "/api/storage/status": { get: { summary: "Object storage status (configured, buckets)", tags: ["Storage"], responses: { "200": { description: "status" } } } },
+
   "/api/admin/users": { get: { summary: "List all users (admin only)", tags: ["Admin"], responses: { "200": { description: "users" } } } },
   "/api/admin/users/stats": { get: { summary: "User counts by tier (admin only)", tags: ["Admin"], responses: { "200": { description: "counts" } } } },
   "/api/admin/mail/folders": { get: { summary: "List admin mail folders with counts", tags: ["Admin"], responses: { "200": { description: "folders" } } } },
