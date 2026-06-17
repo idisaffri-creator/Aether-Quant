@@ -106,7 +106,8 @@ export async function submitOrder(userId: string, input: OrderInput): Promise<{ 
   // Compute fill price for market orders
   let fillPrice: number | null = null;
   if (parsed.type === "market") {
-    const q = await getQuote(parsed.symbol);
+    const allQuotes = await getQuotes();
+    const q = allQuotes.find((x) => x.symbol === parsed.symbol.toUpperCase());
     if (!q) return { order: null as any, reason: "No market price available" };
     fillPrice = applySlippage(q.price, parsed.side);
   }
