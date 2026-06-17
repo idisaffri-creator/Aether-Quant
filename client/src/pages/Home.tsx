@@ -1,28 +1,17 @@
-/* ============================================================
-   AETHER ENERGY — Home Page (Enterprise Trading Portal)
-   Professional grade landing with live data previews,
-   agent fleet showcase, and institutional design language
-   ============================================================ */
+/*
+ * Aether Energy — Landing Page (Enterprise Trading Portal)
+ * Streamlined: Hero → Stats → Platform → AgentFleet → CTASection
+ * Removed marketing-heavy sections (testimonials, pricing tiers, roadmap, etc.)
+ */
 import { lazy, Suspense } from "react";
 import { usePageTitle } from "@/lib/usePageTitle";
 import Navbar from "@/components/Navbar";
 import MarketTicker from "@/components/sections/MarketTicker";
 import HeroSection from "@/components/sections/HeroSection";
-
-// Eagerly load above-the-fold sections for fast LCP
 import StatsSection from "@/components/sections/StatsSection";
 
-// Lazy-load below-the-fold sections to reduce initial bundle
-const TerminalSection = lazy(() => import("@/components/sections/TerminalSection"));
-const AgentFleetSection = lazy(() => import("@/components/sections/AgentFleetSection"));
-const MonteCarloSection = lazy(() => import("@/components/sections/MonteCarloSection"));
-const FeaturesSection = lazy(() => import("@/components/sections/FeaturesSection"));
 const PlatformSection = lazy(() => import("@/components/sections/PlatformSection"));
-const ComplianceSection = lazy(() => import("@/components/sections/ComplianceSection"));
-const HowItWorksSection = lazy(() => import("@/components/sections/HowItWorksSection"));
-const TestimonialsSection = lazy(() => import("@/components/sections/TestimonialsSection"));
-const PricingSection = lazy(() => import("@/components/sections/PricingSection"));
-const RoadmapSection = lazy(() => import("@/components/sections/RoadmapSection"));
+const AgentFleetSection = lazy(() => import("@/components/sections/AgentFleetSection"));
 const CTASection = lazy(() => import("@/components/sections/CTASection"));
 const Footer = lazy(() => import("@/components/Footer"));
 
@@ -43,34 +32,10 @@ export default function Home() {
       <HeroSection />
       <StatsSection />
       <Suspense fallback={<SectionSkeleton />}>
-        <TerminalSection />
-      </Suspense>
-      <Suspense fallback={<SectionSkeleton />}>
-        <AgentFleetSection />
-      </Suspense>
-      <Suspense fallback={<SectionSkeleton />}>
-        <MonteCarloSection />
-      </Suspense>
-      <Suspense fallback={<SectionSkeleton />}>
-        <FeaturesSection />
-      </Suspense>
-      <Suspense fallback={<SectionSkeleton />}>
         <PlatformSection />
       </Suspense>
       <Suspense fallback={<SectionSkeleton />}>
-        <ComplianceSection />
-      </Suspense>
-      <Suspense fallback={<SectionSkeleton />}>
-        <HowItWorksSection />
-      </Suspense>
-      <Suspense fallback={<SectionSkeleton />}>
-        <TestimonialsSection />
-      </Suspense>
-      <Suspense fallback={<SectionSkeleton />}>
-        <PricingSection />
-      </Suspense>
-      <Suspense fallback={<SectionSkeleton />}>
-        <RoadmapSection />
+        <AgentFleetSection />
       </Suspense>
       <Suspense fallback={<SectionSkeleton />}>
         <CTASection />
