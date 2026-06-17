@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { authMiddleware } from "../middleware/auth";
 import { submitOrder, cancelOrder, listOrders, getPositions, getPnl, orderSchema } from "../services/trading/paperEngine";
+import { routeOrder, setTradingMode } from "../services/trading/router";
 import { startStrategyRun, stopStrategyRun, listStrategyRuns } from "../services/trading/strategyRunner";
 import { logger } from "../lib/logger";
 
@@ -20,16 +21,30 @@ router.post("/orders", authMiddleware, async (req, res) => {
       res.status(400).json({ code: "VALIDATION", message: parsed.error.issues[0]?.message || "Invalid order", status: 400 });
       return;
     }
-    const { order, reason } = await submitOrder(req.user!.userId, parsed.data);
-    if (!order) {
-      res.status(400).json({ code: "REJECTED", message: reason || "Order rejected", status: 400 });
+    const result = await routeOrder(req.user!.userId, parsed.data);
+    if (!result.order) {
+      res.status(400).json({ code: "REJECTED", message: result.message, status: 400 });
       return;
     }
-    res.status(201).json({ order });
+    res.status(201).json({ mode: result.mode, message: result.message, order: result.order });
   } catch (err) {
     logger.error({ err: (err as Error).message }, "order submit failed");
     res.status(500).json({ code: "INTERNAL", message: "Order submission failed", status: 500 });
   }
+});
+
+/**
+ * POST /api/trading/mode
+ * Switch between paper and live trading. Live requires KYC + Alpaca configured.
+ */
+router.post("/mode", authMiddleware, async (req, res) => {
+  const { mode } = req.body as { mode?: "paper" | "live" };
+  if (mode !== "paper" && mode !== "live") {
+    res.status(400).json({ code: "VALIDATION", message: "mode must be 'paper' or 'live'", status: 400 });
+    return;
+  }
+  const result = await setTradingMode(req.user!.userId, mode);
+  res.status(result.ok ? 200 : 400).json(result);
 });
 
 /**
