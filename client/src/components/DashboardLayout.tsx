@@ -74,6 +74,7 @@ const tradingNav = [
   { path: "/dashboard/intelligence", label: "Intelligence", icon: Activity },
   { path: "/dashboard/mail", label: "Mail", icon: Mail },
   { path: "/dashboard/audit", label: "Audit Trail", icon: Shield },
+  { path: "/dashboard/trading", label: "Paper Trading", icon: TrendingUp },
   { path: "/dashboard/settings", label: "Settings", icon: SettingsIcon },
 ];
 

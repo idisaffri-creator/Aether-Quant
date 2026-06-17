@@ -79,6 +79,7 @@ function Router() {
                 <Route path="/dashboard/mail" component={Mail} />
                 <Route path="/dashboard/audit" component={Audit} />
                 <Route path="/dashboard/settings" component={Settings} />
+                <Route path="/dashboard/trading" component={Trading} />
                 <Route path="/dashboard/admin-mail" component={AdminMail} />
                 <Route path="/dashboard/404" component={NotFound} />
                 <Route component={NotFound} />

@@ -19,6 +19,7 @@ import { getGdeltStatus } from "./adapters/gdelt";
 import { getOllamaStatus } from "./adapters/ollama";
 import { broadcastTick } from "../../ws/tickBroadcaster";
 import { processTick } from "../trading/paperEngine";
+import { processSignals } from "../trading/strategyRunner";
 import { cacheGetSet } from "../../lib/redis";
 import { db, schema } from "../../db";
 import { eq } from "drizzle-orm";
@@ -109,6 +110,11 @@ async function runQuoteTick(): Promise<void> {
     broadcastTick({ type: "quotes", data: quotes, ts: Date.now() });
     // Process pending paper orders against current prices
     await processTick(quotes).catch((err) => logger.warn({ err: err.message }, "processTick failed"));
+    // Process signals → submit paper orders for users with running strategies
+    const sigResult = await processSignals(quotes).catch((err) => logger.warn({ err: err.message }, "processSignals failed"));
+    if (sigResult.ordersSubmitted > 0) {
+      logger.info({ submitted: sigResult.ordersSubmitted }, "strategy runner: orders from signals");
+    }
   } catch (err) {
     logger.warn({ err: (err as Error).message }, "quote tick failed");
   }

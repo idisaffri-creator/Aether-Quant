@@ -35,6 +35,8 @@ import healthRoutes from "./routes/health";
 import adminMailRoutes from "./routes/adminMail";
 import adminUsersRoutes from "./routes/adminUsers";
 import tradingRoutes from "./routes/trading";
+import openapiRoutes from "./routes/openapi";
+import statusRoutes from "./routes/status";
 import { setupWebSocket } from "./ws/index";
 import { runMigrations } from "./db";
 import { startIngest, stopIngest } from "./services/data/ingest";
@@ -147,6 +149,7 @@ async function startServer() {
 
   // ─── Routes ──────────────────────────────────────────────────────────
   app.use("/", healthRoutes);
+  app.use("/status", statusRoutes);
   app.use("/api/auth", authRoutes);
   app.use("/api/auth/2fa", auth2faRoutes);
   app.use("/api/auth/me", gdprRoutes); // /export, DELETE /
@@ -164,6 +167,7 @@ async function startServer() {
   app.use("/api/admin/mail", adminMailRoutes);
   app.use("/api/admin", adminUsersRoutes);
   app.use("/api/trading", tradingRoutes);
+  app.use("/api", openapiRoutes);
 
   // CSP report collector
   app.post("/api/csp-report", (req, res) => {
