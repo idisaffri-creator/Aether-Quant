@@ -41,8 +41,11 @@ import openapiRoutes from "./routes/openapi";
 import statusRoutes from "./routes/status";
 import statusUIRoutes from "./routes/statusUI";
 import kycRoutes from "./routes/kyc";
+import kycProviderRoutes from "./routes/kycProvider";
 import legalRoutes from "./routes/legal";
 import alertRoutes from "./routes/alerts";
+import backtestRoutes from "./routes/backtest";
+import customStrategyRoutes from "./routes/customStrategies";
 import { setupWebSocket } from "./ws/index";
 import { runMigrations } from "./db";
 import { startIngest, stopIngest } from "./services/data/ingest";
@@ -176,8 +179,11 @@ async function startServer() {
   app.use("/api/admin", adminUsersRoutes);
   app.use("/api/trading", tradingRoutes);
   app.use("/api/kyc", kycRoutes);
+  app.use("/api/kyc", kycProviderRoutes);
   app.use("/api/legal", legalRoutes);
   app.use("/api/alerts", alertRoutes);
+  app.use("/api/backtest", backtestRoutes);
+  app.use("/api/strategies", customStrategyRoutes);
   app.use("/api", openapiRoutes);
 
   // CSP report collector

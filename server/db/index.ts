@@ -153,6 +153,47 @@ export async function runMigrations(): Promise<void> {
     )`;
     await client`CREATE INDEX IF NOT EXISTS consent_user_idx ON consent_log (user_id, accepted_at DESC)`;
 
+    // Backtests
+    await client`CREATE TABLE IF NOT EXISTS backtests (
+      id text PRIMARY KEY,
+      user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      strategy text NOT NULL,
+      symbol text NOT NULL,
+      start_date text NOT NULL,
+      end_date text NOT NULL,
+      initial_balance numeric(20,2) NOT NULL,
+      final_equity numeric(20,2),
+      total_return numeric(20,8),
+      total_return_pct numeric(20,8),
+      sharpe_ratio numeric(20,8),
+      max_drawdown numeric(20,8),
+      max_drawdown_pct numeric(20,8),
+      win_rate numeric(20,8),
+      total_trades integer,
+      status text NOT NULL DEFAULT 'running' CHECK (status IN ('running','completed','failed')),
+      params text,
+      result text,
+      error text,
+      created_at timestamp NOT NULL DEFAULT now(),
+      completed_at timestamp
+    )`;
+    await client`CREATE INDEX IF NOT EXISTS backtests_user_idx ON backtests (user_id, created_at DESC)`;
+
+    // Custom strategies
+    await client`CREATE TABLE IF NOT EXISTS custom_strategies (
+      id text PRIMARY KEY,
+      user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      name text NOT NULL,
+      description text,
+      symbol text NOT NULL,
+      conditions text NOT NULL,
+      actions text NOT NULL,
+      enabled text NOT NULL DEFAULT 'true' CHECK (enabled IN ('true','false')),
+      created_at timestamp NOT NULL DEFAULT now(),
+      updated_at timestamp NOT NULL DEFAULT now()
+    )`;
+    await client`CREATE INDEX IF NOT EXISTS custom_strategies_user_idx ON custom_strategies (user_id, created_at DESC)`;
+
     console.log("[db] Auto-migrations + indexes complete");
   } catch (err) {
     console.warn("[db] Auto-migrations skipped/failed (continuing):", (err as Error).message);

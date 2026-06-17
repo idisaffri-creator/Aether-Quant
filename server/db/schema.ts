@@ -202,3 +202,40 @@ export const consentLog = pgTable("consent_log", {
   userAgent: text("user_agent"),
   acceptedAt: timestamp("accepted_at").defaultNow().notNull(),
 });
+
+export const backtests = pgTable("backtests", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  strategy: text("strategy").notNull(),
+  symbol: text("symbol").notNull(),
+  startDate: text("start_date").notNull(),
+  endDate: text("end_date").notNull(),
+  initialBalance: decimal("initial_balance", { precision: 20, scale: 2 }).notNull(),
+  finalEquity: decimal("final_equity", { precision: 20, scale: 2 }),
+  totalReturn: decimal("total_return", { precision: 20, scale: 8 }),
+  totalReturnPct: decimal("total_return_pct", { precision: 20, scale: 8 }),
+  sharpeRatio: decimal("sharpe_ratio", { precision: 20, scale: 8 }),
+  maxDrawdown: decimal("max_drawdown", { precision: 20, scale: 8 }),
+  maxDrawdownPct: decimal("max_drawdown_pct", { precision: 20, scale: 8 }),
+  winRate: decimal("win_rate", { precision: 20, scale: 8 }),
+  totalTrades: integer("total_trades"),
+  status: text("status", { enum: ["running", "completed", "failed"] }).notNull().default("running"),
+  params: text("params"),
+  result: text("result"),
+  error: text("error"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"),
+});
+
+export const customStrategies = pgTable("custom_strategies", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  description: text("description"),
+  symbol: text("symbol").notNull(),
+  conditions: text("conditions").notNull(),
+  actions: text("actions").notNull(),
+  enabled: text("enabled", { enum: ["true", "false"] }).notNull().default("true"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});

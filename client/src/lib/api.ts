@@ -106,19 +106,13 @@ export const api = {
     updatePreferences: (data: UserPreferences) =>
       request<{ preferences: UserPreferences }>("/auth/preferences", { method: "PUT", body: JSON.stringify(data) }),
     getSession: () =>
-      request<{
-        sessionId: string | null;
-        userId: string;
-        email: string;
-        issuedAt: string | null;
-        expiresAt: string | null;
-        remainingMs: number;
-        ip: string;
-        userAgent: string;
-        browser: string;
-        os: string;
-        device: string;
-      }>("/auth/session"),
+      request<{ userId: string; email: string; issuedAt: string; expiresAt: string; ip: string; browser: string; os: string; device: string }>("/auth/session"),
+    completeOnboarding: () =>
+      request<{ preferences: UserPreferences & { onboardingCompleted?: boolean } }>("/auth/onboarding/complete", { method: "POST" }),
+    exportData: () => request<{ exportedAt: string; user: any; consentLog: any[]; orders: any[]; positions: any[]; strategyRuns: any[]; kycSubmissions: any[]; backtests: any[]; auditLog: any[] }>("/auth/me/export"),
+    deleteAccount: () => request<{ message: string }>("/auth/me", { method: "DELETE" }),
+    getSession: () =>
+      request<{ sessionId: string | null; userId: string; email: string; issuedAt: string | null; expiresAt: string | null; remainingMs: number; ip: string; userAgent: string; browser: string; os: string; device: string }>("/auth/session"),
   },
   agents: {
     signals: () => request<{ signals: TradeSignal[] }>("/agents/signals"),
@@ -317,6 +311,25 @@ export const api = {
     cancelOrder: (id: string) => request<{ ok: boolean }>(`/trading/orders/${id}`, { method: "DELETE" }),
     getPositions: () => request<{ positions: Array<{ id: string; symbol: string; quantity: string; avgEntryPrice: string; realizedPnl: string; updatedAt: string }> }>("/trading/positions"),
     getPnl: () => request<{ paperBalance: number; equity: number; unrealizedPnl: number; realizedPnl: number; positions: number; totalTradeCount: number }>("/trading/pnl"),
+    setMode: (mode: "paper" | "live") =>
+      request<{ ok: boolean; message: string }>("/trading/mode", { method: "POST", body: JSON.stringify({ mode }) }),
+  },
+  backtest: {
+    run: (data: { strategy: string; symbol: string; startDate: string; endDate: string; initialBalance: number; params?: any }) =>
+      request<{ id: string; status: string; result: any }>("/backtest/run", { method: "POST", body: JSON.stringify(data) }),
+    get: (id: string) => request<any>(`/backtest/${id}`),
+    list: (limit = 20) => request<{ backtests: any[] }>(`/backtest?limit=${limit}`),
+  },
+  strategies: {
+    listCustom: () => request<{ strategies: any[] }>("/strategies/custom"),
+    createCustom: (data: any) => request<{ id: string }>("/strategies/custom", { method: "POST", body: JSON.stringify(data) }),
+    updateCustom: (id: string, data: any) => request<{ message: string }>(`/strategies/custom/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+    deleteCustom: (id: string) => request<{ message: string }>(`/strategies/custom/${id}`, { method: "DELETE" }),
+  },
+  kyc: {
+    submit: (data: any) => request<{ message: string; status: string; id: string }>("/kyc/submit", { method: "POST", body: JSON.stringify(data) }),
+    status: () => request<{ submitted: boolean; status?: string; legalName?: string; country?: string; submittedAt?: string; reviewedAt?: string }>("/kyc/status"),
+    createInquiry: () => request<{ id: string; providerRef: string; url: string; status: string }>("/kyc/inquiry", { method: "POST" }),
   },
 };
 

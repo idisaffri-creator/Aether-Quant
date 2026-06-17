@@ -60,6 +60,9 @@ const preferencesSchema = z.object({
     showProfile: z.boolean().optional(),
     showActivity: z.boolean().optional(),
   }).optional(),
+  onboardingCompleted: z.boolean().optional(),
+  paperBalance: z.number().min(0).max(100_000_000).optional(),
+  tradingMode: z.enum(["paper", "live"]).optional(),
 });
 
 const DEFAULT_PREFS: Required<UserPreferences> = {
@@ -646,16 +649,40 @@ router.put("/preferences", authMiddleware, async (req, res) => {
     // Merge with existing (so partial updates don't wipe fields)
     const existing = await db.select({ preferences: schema.users.preferences }).from(schema.users).where(eq(schema.users.id, userId)).execute();
     const base = mergePrefs(existing[0]?.preferences as UserPreferences | null);
-    const merged: UserPreferences = {
+    const merged: UserPreferences & { onboardingCompleted?: boolean; paperBalance?: number; tradingMode?: "paper" | "live" } = {
       notifications: { ...base.notifications, ...(parsed.data.notifications || {}) },
       appearance: { ...base.appearance, ...(parsed.data.appearance || {}) },
       privacy: { ...base.privacy, ...(parsed.data.privacy || {}) },
     };
+    if (parsed.data.onboardingCompleted !== undefined) merged.onboardingCompleted = parsed.data.onboardingCompleted;
+    if (parsed.data.paperBalance !== undefined) merged.paperBalance = parsed.data.paperBalance;
+    if (parsed.data.tradingMode !== undefined) merged.tradingMode = parsed.data.tradingMode;
     await db.update(schema.users).set({ preferences: merged, updatedAt: new Date() }).where(eq(schema.users.id, userId)).execute();
     res.json({ preferences: merged });
   } catch (error) {
     console.error("Save prefs error:", error);
     res.status(500).json({ code: "INTERNAL", message: "Failed to save preferences", status: 500 });
+  }
+});
+
+/**
+ * POST /api/auth/onboarding/complete
+ * Mark onboarding as complete in user preferences.
+ */
+router.post("/onboarding/complete", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user!.userId;
+    if (isDemoUser(userId, req.user!.email)) {
+      res.json({ preferences: { ...mergePrefs(null), onboardingCompleted: true } });
+      return;
+    }
+    const existing = await db.select({ preferences: schema.users.preferences }).from(schema.users).where(eq(schema.users.id, userId)).execute();
+    const base: any = mergePrefs(existing[0]?.preferences as UserPreferences | null);
+    base.onboardingCompleted = true;
+    await db.update(schema.users).set({ preferences: base, updatedAt: new Date() }).where(eq(schema.users.id, userId)).execute();
+    res.json({ preferences: base });
+  } catch (err) {
+    res.status(500).json({ code: "INTERNAL", message: "Failed to complete onboarding" });
   }
 });
 

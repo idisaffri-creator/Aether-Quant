@@ -3,11 +3,12 @@
  * Glassmorphic sidebar and header, rounded pill nav items,
  * premium fintech spacing and typography.
  */
-import { useState, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { AgentChat } from "@/components/agents/AgentChat";
 import NotificationBell from "@/components/NotificationBell";
+import Onboarding from "@/components/Onboarding";
 import {
   LayoutDashboard,
   Lightbulb,
@@ -32,6 +33,8 @@ import {
   LogOut,
   User,
   Briefcase,
+  Menu,
+  X,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -98,9 +101,23 @@ const LogoSvg = () => (
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [location, setLocation] = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const user = useAtomValue(userAtom);
   const [, setToken] = useAtom(tokenAtom);
   const [, setUser] = useAtom(userAtom);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location]);
+
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [mobileOpen]);
 
   const isAdmin = user?.role === "admin" || user?.tier === "admin";
 
@@ -114,12 +131,27 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
+      {/* Mobile overlay */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm md:hidden"
+            onClick={() => setMobileOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Sidebar */}
       <motion.aside
         initial={false}
         animate={{ width: collapsed ? 72 : 260 }}
         transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-        className="relative flex flex-col border-r border-white/5 bg-white/[0.01] backdrop-blur-xl shrink-0 z-20"
+        className={`relative flex flex-col border-r border-white/5 bg-white/[0.01] backdrop-blur-xl shrink-0 z-20 ${
+          mobileOpen ? "fixed inset-y-0 left-0 w-72" : "hidden md:flex"
+        }`}
       >
         {/* Logo */}
         <div className="flex items-center h-16 px-4 border-b border-white/5">
@@ -143,6 +175,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               )}
             </AnimatePresence>
           </Link>
+          <button
+            onClick={() => setMobileOpen(false)}
+            className="ml-auto p-1.5 rounded hover:bg-accent/50 md:hidden"
+            aria-label="Close menu"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
 
         {/* Navigation */}
@@ -347,12 +386,19 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 blur-[120px] rounded-full pointer-events-none -z-10" />
 
         {/* Top header */}
-        <header className="h-16 border-b border-white/5 bg-white/[0.01] backdrop-blur-xl flex items-center justify-between px-8 shrink-0 z-10 sticky top-0">
+        <header className="h-16 border-b border-white/5 bg-white/[0.01] backdrop-blur-xl flex items-center justify-between px-4 sm:px-6 lg:px-8 shrink-0 z-10 sticky top-0">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-white/[0.03] border border-white/5 flex items-center justify-center">
+            <button
+              onClick={() => setMobileOpen(true)}
+              className="md:hidden p-1.5 rounded hover:bg-accent/50"
+              aria-label="Open menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <div className="hidden sm:flex w-8 h-8 rounded-lg bg-white/[0.03] border border-white/5 items-center justify-center">
               <Activity className="w-4 h-4 text-foreground/80" />
             </div>
-            <span className="font-display font-semibold text-base text-foreground tracking-tight">
+            <span className="font-display font-semibold text-base text-foreground tracking-tight truncate">
               {[...mainNav, ...tradingNav].find((n) => n.path === location)?.label || "Dashboard"}
             </span>
           </div>
@@ -419,7 +465,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto grid-bg p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto grid-bg p-4 sm:p-6 lg:p-8">
           <AnimatePresence mode="wait">
             <motion.div
               key={location}
@@ -435,6 +481,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </main>
       </div>
       <AgentChat />
+      <Onboarding />
     </div>
   );
 }
