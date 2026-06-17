@@ -4,7 +4,7 @@
  */
 import { motion } from "framer-motion";
 import { Link } from "wouter";
-import { ArrowRight, Brain, Shield, Sparkles, Compass, Briefcase, FlaskConical, GitBranch, BarChart3, Radio, BookOpen, FileSearch, Bell, TrendingUp, Scale, Layers, ChevronRight } from "lucide-react";
+import { ArrowRight, Brain, Shield, Sparkles, Compass, Briefcase, FlaskConical, GitBranch, BarChart3, Radio, BookOpen, FileSearch, Bell, TrendingUp, Scale, Layers, ChevronRight, Zap } from "lucide-react";
 
 const useCases = [
   {
