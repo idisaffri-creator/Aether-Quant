@@ -6,7 +6,7 @@
  *   MEILI_URL  (default http://127.0.0.1:7700)
  *   MEILI_KEY  (master key, optional for dev)
  */
-import { MeiliSearch, type Index } from "meilisearch";
+import { Meilisearch, type Index } from "meilisearch";
 import { db, schema } from "../../db";
 import { eq, desc } from "drizzle-orm";
 import { logger } from "../../lib/logger";
@@ -14,11 +14,11 @@ import { logger } from "../../lib/logger";
 const MEILI_URL = process.env.MEILI_URL || "http://127.0.0.1:7700";
 const MEILI_KEY = process.env.MEILI_KEY || undefined;
 
-let meili: MeiliSearch | null = null;
+let meili: Meilisearch | null = null;
 
-function getClient(): MeiliSearch {
+function getClient(): Meilisearch {
   if (!meili) {
-    meili = new MeiliSearch({ host: MEILI_URL, apiKey: MEILI_KEY });
+    meili = new Meilisearch({ host: MEILI_URL, apiKey: MEILI_KEY });
   }
   return meili;
 }
