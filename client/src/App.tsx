@@ -13,6 +13,7 @@ import BacktestResults from "./pages/BacktestResults";
 import StrategyLibrary from "./pages/StrategyLibrary";
 import AIAssistant from "./pages/Dashboard/AIAssistant";
 import Comparison from "./pages/Dashboard/Comparison";
+import Trading from "./pages/Dashboard/Trading";
 import Notifications from "./pages/Dashboard/Notifications";
 import Kyc from "./pages/Dashboard/Kyc";
 import Marketplace from "./pages/Dashboard/Marketplace";
