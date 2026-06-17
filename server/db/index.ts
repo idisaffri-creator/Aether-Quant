@@ -204,10 +204,16 @@ export async function runMigrations(): Promise<void> {
       conditions text NOT NULL,
       actions text NOT NULL,
       enabled text NOT NULL DEFAULT 'true' CHECK (enabled IN ('true','false')),
+      published text NOT NULL DEFAULT 'false' CHECK (published IN ('true','false')),
+      clones integer NOT NULL DEFAULT 0,
+      rating integer NOT NULL DEFAULT 0,
       created_at timestamp NOT NULL DEFAULT now(),
       updated_at timestamp NOT NULL DEFAULT now()
     )`;
     await client`CREATE INDEX IF NOT EXISTS custom_strategies_user_idx ON custom_strategies (user_id, created_at DESC)`;
+    await client`ALTER TABLE custom_strategies ADD COLUMN IF NOT EXISTS published text NOT NULL DEFAULT 'false'`;
+    await client`ALTER TABLE custom_strategies ADD COLUMN IF NOT EXISTS clones integer NOT NULL DEFAULT 0`;
+    await client`ALTER TABLE custom_strategies ADD COLUMN IF NOT EXISTS rating integer NOT NULL DEFAULT 0`;
 
     // Notifications
     await client`CREATE TABLE IF NOT EXISTS notifications (

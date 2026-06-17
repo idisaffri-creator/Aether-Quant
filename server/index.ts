@@ -56,6 +56,8 @@ import comparisonRoutes from "./routes/comparison";
 import searchRoutes from "./routes/search";
 import storageRoutes from "./routes/storage";
 import notificationRoutes from "./routes/notifications";
+import marketplaceRoutes from "./routes/marketplace";
+import leaderboardRoutes from "./routes/leaderboard";
 import { initS3 } from "./services/storage/s3";
 import { ensureIndexes, reindexAllStrategies } from "./services/search/meilisearch";
 import { setupWebSocket } from "./ws/index";
@@ -204,6 +206,8 @@ async function startServer() {
   app.use("/api/search", searchRoutes);
   app.use("/api/storage", storageRoutes);
   app.use("/api/notifications", notificationRoutes);
+  app.use("/api/strategies", marketplaceRoutes);
+  app.use("/api/leaderboard", leaderboardRoutes);
   app.use("/api", calendarRoutes);
   app.use("/api", exportRoutes);
   app.use("/api", openapiRoutes);

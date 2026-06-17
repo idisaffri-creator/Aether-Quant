@@ -325,6 +325,19 @@ export const api = {
     createCustom: (data: any) => request<{ id: string }>("/strategies/custom", { method: "POST", body: JSON.stringify(data) }),
     updateCustom: (id: string, data: any) => request<{ message: string }>(`/strategies/custom/${id}`, { method: "PUT", body: JSON.stringify(data) }),
     deleteCustom: (id: string) => request<{ message: string }>(`/strategies/custom/${id}`, { method: "DELETE" }),
+    listMarketplace: (params: { search?: string; symbol?: string } = {}) => {
+      const qs = new URLSearchParams();
+      Object.entries(params).forEach(([k, v]) => { if (v) qs.append(k, String(v)); });
+      return request<{ strategies: any[] }>(`/strategies/marketplace?${qs}`);
+    },
+    publish: (id: string) => request<{ message: string }>(`/strategies/custom/${id}/publish`, { method: "POST" }),
+    unpublish: (id: string) => request<{ message: string }>(`/strategies/custom/${id}/unpublish`, { method: "POST" }),
+    clone: (id: string, name?: string) => request<{ id: string; message: string }>(`/strategies/custom/${id}/clone`, { method: "POST", body: JSON.stringify({ name }) }),
+    rate: (id: string, rating: number) => request<{ message: string }>(`/strategies/custom/${id}/rate`, { method: "POST", body: JSON.stringify({ rating }) }),
+  },
+  leaderboard: {
+    list: () => request<{ leaderboard: Array<{ rank: number; userId: string; username: string; tier: string; totalPnl: number; totalTrades: number; totalPositions: number; exposure: number }> }>("/leaderboard"),
+    me: () => request<{ rank: number; totalUsers: number; totalPnl: number; totalTrades: number; totalPositions: number; exposure: number }>("/leaderboard/me"),
   },
   kyc: {
     submit: (data: any) => request<{ message: string; status: string; id: string }>("/kyc/submit", { method: "POST", body: JSON.stringify(data) }),

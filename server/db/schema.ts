@@ -236,6 +236,9 @@ export const customStrategies = pgTable("custom_strategies", {
   conditions: text("conditions").notNull(),
   actions: text("actions").notNull(),
   enabled: text("enabled", { enum: ["true", "false"] }).notNull().default("true"),
+  published: text("published", { enum: ["true", "false"] }).notNull().default("false"),
+  clones: integer("clones").notNull().default(0),
+  rating: integer("rating").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
