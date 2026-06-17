@@ -21,8 +21,10 @@ import TrustStrip from "@/components/sections/TrustStrip";
 import LiveTradingFloorSection from "@/components/sections/LiveTradingFloorSection";
 
 const AgentFleetSection = lazy(() => import("@/components/sections/AgentFleetSection"));
+const UseCasesSection = lazy(() => import("@/components/sections/UseCasesSection"));
 const QuantToolsSection = lazy(() => import("@/components/sections/QuantToolsSection"));
 const RiskSafetySection = lazy(() => import("@/components/sections/RiskSafetySection"));
+const PlatformStatsSection = lazy(() => import("@/components/sections/PlatformStatsSection"));
 const CTASection = lazy(() => import("@/components/sections/CTASection"));
 const Footer = lazy(() => import("@/components/Footer"));
 
@@ -42,11 +44,17 @@ export default function Home() {
       <MarketTicker />
       <div id="hero"><HeroSection /></div>
       <TrustStrip />
+      <Suspense fallback={<SectionSkeleton />}>
+        <PlatformStatsSection />
+      </Suspense>
       <div id="floor">
         <LiveTradingFloorSection />
       </div>
       <Suspense fallback={<SectionSkeleton />}>
         <div id="fleet"><AgentFleetSection /></div>
+      </Suspense>
+      <Suspense fallback={<SectionSkeleton />}>
+        <UseCasesSection />
       </Suspense>
       <Suspense fallback={<SectionSkeleton />}>
         <div id="quant"><QuantToolsSection /></div>
