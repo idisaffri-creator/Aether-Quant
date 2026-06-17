@@ -269,3 +269,55 @@ export const customStrategies = pgTable("custom_strategies", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+/**
+ * Trade journal — user annotations on trades.
+ */
+export const tradeJournal = pgTable("trade_journal", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  orderId: text("order_id"),
+  symbol: text("symbol").notNull(),
+  side: text("side").notNull(),
+  thesis: text("thesis"),
+  lessons: text("lessons"),
+  tags: text("tags").array(),
+  rating: integer("rating"),
+  pnlAtNote: numeric("pnl_at_note", { precision: 18, scale: 8 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+/**
+ * Price alerts — notify user when symbol hits target price.
+ */
+export const priceAlerts = pgTable("price_alerts", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  symbol: text("symbol").notNull(),
+  condition: text("condition").notNull(),
+  threshold: numeric("threshold", { precision: 18, scale: 8 }).notNull(),
+  currentPrice: numeric("current_price", { precision: 18, scale: 8 }),
+  triggeredAt: timestamp("triggered_at"),
+  active: integer("active").notNull().default(1),
+  triggerOnce: integer("trigger_once").notNull().default(1),
+  notifyEmail: integer("notify_email").notNull().default(0),
+  notifyDiscord: integer("notify_discord").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+/**
+ * API keys — programmatic access for third-party developers.
+ */
+export const apiKeys = pgTable("api_keys", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  prefix: text("prefix").notNull(),
+  hash: text("hash").notNull(),
+  scopes: text("scopes").array().notNull(),
+  lastUsedAt: timestamp("last_used_at"),
+  expiresAt: timestamp("expires_at"),
+  revokedAt: timestamp("revoked_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
