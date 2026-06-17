@@ -62,7 +62,7 @@ router.post("/submit", authMiddleware, async (req, res) => {
       riskAcknowledged: "true",
       reviewedAt,
     }).execute();
-    logger.info({ userId, status }, "KYC submitted");
+    logger.info({ userId: req.user!.userId, status }, "KYC submitted");
     res.json({ message: "KYC submitted", status, id });
   } catch (err) {
     logger.error({ err: (err as Error).message }, "KYC submit failed");
