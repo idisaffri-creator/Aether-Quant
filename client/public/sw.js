@@ -5,8 +5,12 @@
  * - Network-first for API (no stale data)
  *
  * VERSION is bumped on every deploy to force-clear stale caches.
+ * We do NOT call skipWaiting() unconditionally — only when the user
+ * explicitly requests it via the SKIP_WAITING message. This prevents
+ * the new SW from interrupting an active session and avoids reload
+ * loops.
  */
-const VERSION = "v2.0.0-" + (self.location?.href || "");
+const VERSION = "v2.0.0";
 const STATIC_CACHE = `aether-static-${VERSION}`;
 const API_CACHE = `aether-api-${VERSION}`;
 const STATIC_ASSETS = ["/manifest.json", "/logo.png", "/robots.txt", "/sw.js"];
@@ -15,8 +19,10 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(STATIC_CACHE).then((cache) => cache.addAll(STATIC_ASSETS).catch(() => {}))
   );
-  // Skip waiting so the new SW activates immediately
-  self.skipWaiting();
+  // NOTE: do NOT call self.skipWaiting() here.
+  // The new SW will wait for all clients to close before activating,
+  // which means the user gets the new code on their NEXT navigation,
+  // not in the middle of their current session.
 });
 
 self.addEventListener("activate", (event) => {
