@@ -200,6 +200,13 @@ const paths: Record<string, any> = {
   "/api/calendar/upcoming": { get: { summary: "Upcoming economic events (EIA inventory, OPEC, Fed, rig count)", tags: ["Market"], responses: { "200": { description: "events" } } } },
   "/api/calendar": { get: { summary: "Full economic calendar (next 30 events)", tags: ["Market"], responses: { "200": { description: "events" } } } },
 
+  "/api/legal/versions": { get: { summary: "Get current versions of ToS, Privacy, Risk Disclosure", tags: ["Legal"], responses: { "200": { description: "versions" } } } },
+  "/api/legal/terms/text": { get: { summary: "Terms of Service (markdown)", tags: ["Legal"], responses: { "200": { description: "markdown" } } } },
+  "/api/legal/privacy/text": { get: { summary: "Privacy Policy (markdown)", tags: ["Legal"], responses: { "200": { description: "markdown" } } } },
+  "/api/legal/risk-disclosure/text": { get: { summary: "Risk Disclosure (markdown)", tags: ["Legal"], responses: { "200": { description: "markdown" } } } },
+  "/api/legal/accept": { post: { summary: "Record acceptance of legal documents", tags: ["Legal"], responses: { "200": { description: "accepted" } } } },
+  "/api/legal/acceptances": { get: { summary: "List your acceptance history", tags: ["Legal"], responses: { "200": { description: "list" } } } },
+
   "/api/admin/users": { get: { summary: "List all users (admin only)", tags: ["Admin"], responses: { "200": { description: "users" } } } },
   "/api/admin/users/stats": { get: { summary: "User counts by tier (admin only)", tags: ["Admin"], responses: { "200": { description: "counts" } } } },
   "/api/admin/mail/folders": { get: { summary: "List admin mail folders with counts", tags: ["Admin"], responses: { "200": { description: "folders" } } } },
