@@ -15,7 +15,7 @@ import { userAtom, tokenAtom } from "@/store/auth";
 import { api, setAuthToken } from "@/lib/api";
 import {
   TrendingUp, TrendingDown, Wallet, Activity, RefreshCw, X, Send,
-  CheckCircle2, AlertCircle, Loader2, Wifi, WifiOff,
+  CheckCircle2, AlertCircle, Loader2, Wifi, WifiOff, Download,
 } from "lucide-react";
 import { toast } from "sonner";
 import CandleChart from "@/components/CandleChart";
@@ -170,6 +170,15 @@ export default function Trading() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <a
+            href="https://aether-energy.ai/api/trading/orders/export.csv"
+            target="_blank"
+            rel="noreferrer"
+            className="p-2 rounded-lg hover:bg-accent/50 text-muted-foreground hover:text-foreground"
+            title="Export orders CSV"
+          >
+            <Download className="w-4 h-4" />
+          </a>
           <span className={`flex items-center gap-1.5 text-xs ${wsConnected ? "text-emerald-400" : "text-muted-foreground"}`}>
             {wsConnected ? <Wifi className="w-3.5 h-3.5" /> : <WifiOff className="w-3.5 h-3.5" />}
             {wsConnected ? "Live" : "Polling"}

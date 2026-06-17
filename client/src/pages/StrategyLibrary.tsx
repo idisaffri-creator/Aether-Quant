@@ -1,290 +1,263 @@
 /*
- * Strategy Library – Void Terminal
- * List of saved backtests/optimizations with name, date, metrics
- * Options: Delete, Re-run, Deploy
+ * Strategy library — template gallery + custom strategies.
+ * Users can clone a template to create a custom strategy.
  */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Library,
-  Search,
-  Trash2,
-  Play,
-  Rocket,
-  Calendar,
-  Target,
-  TrendingUp,
-  TrendingDown,
-  Percent,
-  Filter,
-  MoreVertical,
-  CheckCircle2,
-  Clock,
-  BarChart3,
+  Sparkles, Copy, Trash2, Power, PowerOff, TrendingUp, TrendingDown,
+  BarChart3, Volume2, ArrowRightLeft, Zap, BookOpen, Loader2, X, Check,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { strategyLibrary } from "@/lib/mockData";
+import { api } from "@/lib/api";
+import { usePageTitle } from "@/lib/usePageTitle";
 import { toast } from "sonner";
-import { useLocation } from "wouter";
 
-export default function StrategyLibrary() {
-  const [, setLocation] = useLocation();
-  const [strategies, setStrategies] = useState(strategyLibrary);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterType, setFilterType] = useState<string>("all");
+const CATEGORY_ICONS: Record<string, any> = {
+  trend: TrendingUp, mean_reversion: BarChart3, momentum: Zap, volume: Volume2, volatility: ArrowRightLeft,
+};
+const RISK_COLORS: Record<string, string> = {
+  low: "text-emerald-400 bg-emerald-500/10",
+  medium: "text-amber-400 bg-amber-500/10",
+  high: "text-red-400 bg-red-500/10",
+};
 
-  const filtered = strategies.filter((s) => {
-    const matchesSearch =
-      s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.asset.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = filterType === "all" || s.type.toLowerCase() === filterType;
-    return matchesSearch && matchesType;
-  });
+export default function StrategyLibraryPage() {
+  usePageTitle("Strategy Library");
+  const [tab, setTab] = useState<"templates" | "custom">("templates");
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [custom, setCustom] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [cloneOf, setCloneOf] = useState<any | null>(null);
+  const [cloneName, setCloneName] = useState("");
+  const [cloneSymbol, setCloneSymbol] = useState("WTI");
 
-  const handleDelete = (id: string) => {
-    setStrategies((prev) => prev.filter((s) => s.id !== id));
-    toast.success("Strategy deleted");
-  };
+  useEffect(() => {
+    Promise.all([
+      api.strategies.listCustom().catch(() => ({ strategies: [] })),
+      fetch("/api/strategies/templates", { credentials: "include" })
+        .then(r => r.json())
+        .catch(() => ({ templates: [] })),
+    ]).then(([c, t]) => {
+      setCustom(c.strategies || []);
+      setTemplates(t.templates || []);
+      setLoading(false);
+    });
+  }, []);
+
+  async function cloneTemplate(t: any) {
+    setCloneOf(t);
+    setCloneName(t.name);
+    setCloneSymbol(t.symbol);
+  }
+
+  async function confirmClone() {
+    if (!cloneOf) return;
+    try {
+      const r = await fetch(`/api/strategies/templates/${cloneOf.id}/clone`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: cloneName, symbol: cloneSymbol }),
+      });
+      if (!r.ok) throw new Error("Clone failed");
+      toast.success(`Cloned "${cloneName}" — enable it in your custom strategies`);
+      setCloneOf(null);
+      const c = await api.strategies.listCustom();
+      setCustom(c.strategies || []);
+      setTab("custom");
+    } catch (err) {
+      toast.error("Failed to clone template");
+    }
+  }
+
+  async function toggleEnabled(s: any) {
+    try {
+      await api.strategies.updateCustom(s.id, { enabled: !s.enabled });
+      setCustom(prev => prev.map(x => x.id === s.id ? { ...x, enabled: !x.enabled } : x));
+      toast.success(s.enabled ? "Disabled" : "Enabled");
+    } catch {
+      toast.error("Failed to update");
+    }
+  }
+
+  async function deleteStrategy(s: any) {
+    if (!confirm(`Delete "${s.name}"?`)) return;
+    try {
+      await api.strategies.deleteCustom(s.id);
+      setCustom(prev => prev.filter(x => x.id !== s.id));
+      toast.success("Deleted");
+    } catch {
+      toast.error("Failed to delete");
+    }
+  }
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>;
+  }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <h1 className="text-2xl font-display font-bold text-foreground mb-1">
-          Strategy Library
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Browse, manage, and redeploy your saved backtests and optimization runs.
-        </p>
-      </motion.div>
-
-      {/* Search & Filter Bar */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="flex flex-col sm:flex-row gap-3"
-      >
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search strategies..."
-            className="w-full bg-input border border-border rounded-lg pl-9 pr-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
-          />
-        </div>
-        <div className="flex gap-2">
-          {["all", "backtest", "optimization"].map((type) => (
-            <Button
-              key={type}
-              variant={filterType === type ? "default" : "outline"}
-              size="sm"
-              className="text-xs capitalize font-display"
-              onClick={() => setFilterType(type)}
-            >
-              {type === "all" ? (
-                <>
-                  <Filter className="w-3 h-3 mr-1" />
-                  All
-                </>
-              ) : type === "backtest" ? (
-                <>
-                  <BarChart3 className="w-3 h-3 mr-1" />
-                  Backtests
-                </>
-              ) : (
-                <>
-                  <Target className="w-3 h-3 mr-1" />
-                  Optimizations
-                </>
-              )}
-            </Button>
-          ))}
-        </div>
-      </motion.div>
-
-      {/* Strategy Count */}
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-muted-foreground">
-          Showing <span className="font-mono text-foreground">{filtered.length}</span> of{" "}
-          <span className="font-mono text-foreground">{strategies.length}</span> strategies
-        </p>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-display font-bold tracking-tight">Strategy Library</h1>
+        <p className="text-sm text-muted-foreground mt-1">Pre-built strategy templates and your custom strategies.</p>
       </div>
 
-      {/* Strategy Cards */}
-      <div className="space-y-3">
-        <AnimatePresence>
-          {filtered.map((strategy, i) => (
-            <motion.div
-              key={strategy.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8, height: 0 }}
-              transition={{ delay: i * 0.04 }}
-            >
-              <Card className="bg-card border-border hover:border-primary/20 transition-all">
-                <CardContent className="p-4">
-                  <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                    {/* Left: Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-sm font-display font-semibold text-foreground truncate">
-                          {strategy.name}
-                        </h3>
-                        <Badge
-                          variant="outline"
-                          className={`text-[10px] font-mono shrink-0 ${
-                            strategy.status === "deployed"
-                              ? "border-profit/30 text-profit"
-                              : "border-muted-foreground/30 text-muted-foreground"
-                          }`}
-                        >
-                          {strategy.status === "deployed" ? (
-                            <>
-                              <CheckCircle2 className="w-2.5 h-2.5 mr-0.5" />
-                              Deployed
-                            </>
-                          ) : (
-                            <>
-                              <Clock className="w-2.5 h-2.5 mr-0.5" />
-                              Saved
-                            </>
-                          )}
-                        </Badge>
-                        <Badge variant="outline" className="text-[10px] font-mono shrink-0">
-                          {strategy.type}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground line-clamp-1 mb-2">
-                        {strategy.description}
-                      </p>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1 font-mono">
-                          <Calendar className="w-3 h-3" />
-                          {strategy.date}
-                        </span>
-                        <span className="font-mono">{strategy.asset}</span>
-                      </div>
-                    </div>
-
-                    {/* Middle: Metrics */}
-                    <div className="flex items-center gap-4 lg:gap-6">
-                      <div className="text-center">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
-                          CAGR
-                        </p>
-                        <p className="text-sm font-mono font-bold text-profit">
-                          {strategy.cagr}%
-                        </p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
-                          Sharpe
-                        </p>
-                        <p className="text-sm font-mono font-bold text-primary">
-                          {strategy.sharpe.toFixed(2)}
-                        </p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
-                          Win%
-                        </p>
-                        <p className="text-sm font-mono font-bold text-foreground">
-                          {strategy.winRate}%
-                        </p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
-                          Max DD
-                        </p>
-                        <p className="text-sm font-mono font-bold text-loss">
-                          {strategy.maxDrawdown}%
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Right: Actions */}
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-xs font-display"
-                        onClick={() => setLocation("/dashboard/backtest")}
-                      >
-                        <Play className="w-3 h-3 mr-1" />
-                        Re-run
-                      </Button>
-                      {strategy.status !== "deployed" && (
-                        <Button
-                          size="sm"
-                          className="text-xs font-display bg-primary text-primary-foreground hover:bg-primary/90"
-                          onClick={() =>
-                            toast.success(`Deploying ${strategy.name} as autonomous agent...`)
-                          }
-                        >
-                          <Rocket className="w-3 h-3 mr-1" />
-                          Deploy
-                        </Button>
-                      )}
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="outline" size="sm" className="h-8 w-8 p-0">
-                            <MoreVertical className="w-3.5 h-3.5" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="bg-popover border-border">
-                          <DropdownMenuItem
-                            className="text-xs"
-                            onClick={() => setLocation("/dashboard/optimization")}
-                          >
-                            <Target className="w-3 h-3 mr-2" />
-                            Optimize
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-xs text-loss"
-                            onClick={() => handleDelete(strategy.id)}
-                          >
-                            <Trash2 className="w-3 h-3 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-
-        {filtered.length === 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex flex-col items-center justify-center py-16 text-center"
+      <div className="flex gap-1 border-b border-border">
+        {[
+          { v: "templates", label: "Templates", count: templates.length },
+          { v: "custom", label: "Your strategies", count: custom.length },
+        ].map(t => (
+          <button
+            key={t.v}
+            onClick={() => setTab(t.v as any)}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+              tab === t.v
+                ? "border-primary text-foreground"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
           >
-            <Library className="w-10 h-10 text-muted-foreground/30 mb-3" />
-            <p className="text-sm text-muted-foreground">No strategies found</p>
-            <p className="text-xs text-muted-foreground/60 mt-1">
-              Try adjusting your search or filter
-            </p>
+            {t.label} <span className="ml-1 text-xs text-muted-foreground">({t.count})</span>
+          </button>
+        ))}
+      </div>
+
+      {tab === "templates" && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {templates.map(t => {
+            const Icon = CATEGORY_ICONS[t.category] || Sparkles;
+            return (
+              <div key={t.id} className="glass-card rounded-xl p-5 space-y-3">
+                <div className="flex items-start justify-between">
+                  <div className="p-2 bg-primary/10 text-primary rounded-lg">
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider font-semibold ${RISK_COLORS[t.riskLevel]}`}>
+                    {t.riskLevel} risk
+                  </span>
+                </div>
+                <div>
+                  <h3 className="font-display font-semibold text-sm">{t.name}</h3>
+                  <p className="text-xs text-muted-foreground mt-1">{t.description}</p>
+                </div>
+                <div className="flex flex-wrap gap-1.5 text-[10px]">
+                  <span className="px-2 py-0.5 rounded bg-accent/50 text-muted-foreground">{t.symbol}</span>
+                  <span className="px-2 py-0.5 rounded bg-accent/50 text-muted-foreground">{t.category.replace("_", " ")}</span>
+                  <span className="px-2 py-0.5 rounded bg-accent/50 text-muted-foreground">hold: {t.expectedHoldTime}</span>
+                </div>
+                {t.backtestHint && (
+                  <p className="text-[11px] text-muted-foreground italic">💡 {t.backtestHint}</p>
+                )}
+                <button
+                  onClick={() => cloneTemplate(t)}
+                  className="w-full px-3 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-medium hover:bg-primary/90 flex items-center justify-center gap-1.5"
+                >
+                  <Copy className="w-3.5 h-3.5" /> Clone to my strategies
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {tab === "custom" && (
+        <div className="space-y-3">
+          {custom.length === 0 ? (
+            <div className="glass-card rounded-xl p-12 text-center">
+              <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+              <h3 className="text-lg font-display font-semibold mb-1">No custom strategies</h3>
+              <p className="text-sm text-muted-foreground">Clone a template above or build your own with the strategy builder.</p>
+            </div>
+          ) : (
+            custom.map(s => (
+              <div key={s.id} className="glass-card rounded-xl p-4 flex items-center gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-display font-semibold text-sm truncate">{s.name}</h3>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-accent text-muted-foreground">{s.symbol}</span>
+                    {s.enabled ? (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400">enabled</span>
+                    ) : (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-500/20 text-zinc-400">disabled</span>
+                    )}
+                  </div>
+                  {s.description && <p className="text-xs text-muted-foreground mt-1 truncate">{s.description}</p>}
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    {s.conditions?.length || 0} condition(s) · {s.actions?.length || 0} action(s)
+                  </p>
+                </div>
+                <button
+                  onClick={() => toggleEnabled(s)}
+                  className="p-2 rounded-lg hover:bg-accent/50"
+                  title={s.enabled ? "Disable" : "Enable"}
+                >
+                  {s.enabled ? <Power className="w-4 h-4 text-emerald-400" /> : <PowerOff className="w-4 h-4 text-muted-foreground" />}
+                </button>
+                <button
+                  onClick={() => deleteStrategy(s)}
+                  className="p-2 rounded-lg hover:bg-red-500/10 text-muted-foreground hover:text-red-400"
+                  title="Delete"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      <AnimatePresence>
+        {cloneOf && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={() => setCloneOf(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
+              className="glass-card rounded-2xl p-6 max-w-md w-full"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h2 className="text-lg font-display font-bold">Clone template</h2>
+                  <p className="text-sm text-muted-foreground">{cloneOf.name}</p>
+                </div>
+                <button onClick={() => setCloneOf(null)} className="p-1 rounded hover:bg-accent/50">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs text-muted-foreground block mb-1">Strategy name</label>
+                  <input
+                    value={cloneName}
+                    onChange={e => setCloneName(e.target.value)}
+                    className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground block mb-1">Symbol</label>
+                  <select
+                    value={cloneSymbol}
+                    onChange={e => setCloneSymbol(e.target.value)}
+                    className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
+                  >
+                    {["WTI", "BRENT", "NGAS", "GOLD", "SILVER", "COPPER", "HEATOIL", "GASOL"].map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
+                <button
+                  onClick={confirmClone}
+                  className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 flex items-center justify-center gap-2"
+                >
+                  <Check className="w-4 h-4" /> Clone
+                </button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
-      </div>
+      </AnimatePresence>
     </div>
   );
 }

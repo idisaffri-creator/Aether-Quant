@@ -20,6 +20,7 @@ import { getOllamaStatus } from "./adapters/ollama";
 import { broadcastTick } from "../../ws/tickBroadcaster";
 import { processTick } from "../trading/paperEngine";
 import { processSignals } from "../trading/strategyRunner";
+import { processCustomStrategies } from "../trading/customStrategyExecutor";
 import { cacheGetSet } from "../../lib/redis";
 import { db, schema } from "../../db";
 import { eq } from "drizzle-orm";
@@ -114,6 +115,11 @@ async function runQuoteTick(): Promise<void> {
     const sigResult = await processSignals(quotes).catch((err) => logger.warn({ err: err.message }, "processSignals failed"));
     if (sigResult.ordersSubmitted > 0) {
       logger.info({ submitted: sigResult.ordersSubmitted }, "strategy runner: orders from signals");
+    }
+    // Process user-defined custom strategies (RSI/MACD/etc.)
+    const customResult = await processCustomStrategies().catch((err) => logger.warn({ err: err.message }, "processCustomStrategies failed"));
+    if (customResult.ordersPlaced > 0) {
+      logger.info({ evaluated: customResult.evaluated, triggered: customResult.triggered, placed: customResult.ordersPlaced }, "custom strategies: orders placed");
     }
   } catch (err) {
     logger.warn({ err: (err as Error).message }, "quote tick failed");

@@ -10,6 +10,7 @@ import { NotificationProvider } from "./contexts/NotificationContext";
 import DashboardLayout from "./components/DashboardLayout";
 import IdeaExtractor from "./pages/IdeaExtractor";
 import BacktestResults from "./pages/BacktestResults";
+import StrategyLibrary from "./pages/StrategyLibrary";
 import Optimization from "./pages/Optimization";
 import AgentWorkforce from "./pages/AgentWorkforce";
 import OutcomeBilling from "./pages/OutcomeBilling";

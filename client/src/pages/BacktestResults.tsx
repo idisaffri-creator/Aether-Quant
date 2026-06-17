@@ -1,449 +1,402 @@
 /*
- * Backtest Results – Void Terminal
- * Metrics dashboard, equity curve chart, trade list table
- * Simulated loading then display realistic results
+ * Backtest — runs strategies against historical Yahoo data.
+ * Real-time: 1-2 year backtests take 1-10s depending on Yahoo latency.
  */
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useMemo } from "react";
+import { motion } from "framer-motion";
 import {
-  TrendingUp,
-  TrendingDown,
-  BarChart3,
-  Target,
-  Shield,
-  Percent,
-  Hash,
-  ArrowUpRight,
-  ArrowDownRight,
-  Settings2,
-  Loader2,
-  Download,
-  ChevronUp,
-  ChevronDown,
+  TrendingUp, TrendingDown, BarChart3, Target, Shield, Percent,
+  Hash, Download, Loader2, Play, Calendar, DollarSign, Sparkles,
+  CheckCircle2, AlertCircle,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine,
 } from "recharts";
-import { equityCurveData, backtestMetrics, tradeList } from "@/lib/mockData";
-import { useLocation } from "wouter";
+import { api } from "@/lib/api";
+import { usePageTitle } from "@/lib/usePageTitle";
+import { toast } from "sonner";
 
-const STRATEGY_BG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663489353166/Smb5wRr5wwDpFtVfRrnNA3/strategy-bg-cUQySaa7YRSJqRYVeNWwLs.webp";
+const SYMBOLS = [
+  { value: "WTI", label: "WTI Crude (CL=F)" },
+  { value: "BRENT", label: "Brent Crude (BZ=F)" },
+  { value: "NGAS", label: "Natural Gas (NG=F)" },
+  { value: "GOLD", label: "Gold (GC=F)" },
+  { value: "SILVER", label: "Silver (SI=F)" },
+  { value: "COPPER", label: "Copper (HG=F)" },
+  { value: "HEATOIL", label: "Heating Oil (HO=F)" },
+  { value: "GASOL", label: "RBOB Gasoline (RB=F)" },
+];
 
-function MetricTile({
-  label,
-  value,
-  icon: Icon,
-  color,
-  suffix,
-}: {
-  label: string;
-  value: string;
-  icon: React.ElementType;
-  color: string;
-  suffix?: string;
-}) {
-  return (
-    <div className="p-3 bg-secondary/40 rounded-lg border border-border/50">
-      <div className="flex items-center gap-2 mb-1.5">
-        <Icon className={`w-3.5 h-3.5 ${color}`} />
-        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
-          {label}
-        </span>
-      </div>
-      <p className="text-lg font-mono font-bold text-foreground">
-        {value}
-        {suffix && (
-          <span className="text-xs text-muted-foreground ml-0.5">{suffix}</span>
-        )}
-      </p>
-    </div>
-  );
+const STRATEGIES = [
+  { value: "Mean Reversion", label: "Mean Reversion", desc: "Buy dips, sell rips. Works in range-bound markets." },
+  { value: "Momentum", label: "Momentum", desc: "Follow trends with stop-loss and take-profit." },
+  { value: "Buy & Hold", label: "Buy & Hold (baseline)", desc: "No signals. Just buy at start, sell at end." },
+];
+
+const DATE_PRESETS = [
+  { label: "3M", months: 3 },
+  { label: "6M", months: 6 },
+  { label: "1Y", months: 12 },
+  { label: "2Y", months: 24 },
+];
+
+interface BacktestResult {
+  id: string;
+  initialBalance: number;
+  finalEquity: number;
+  totalReturn: number;
+  totalReturnPct: number;
+  trades: any[];
+  equityCurve: { timestamp: number; equity: number }[];
+  metrics: {
+    sharpeRatio: number;
+    maxDrawdown: number;
+    maxDrawdownPct: number;
+    winRate: number;
+    totalTrades: number;
+    avgProfit: number;
+    avgProfitPct: number;
+    buyAndHoldReturn: number;
+  };
 }
 
-function CustomTooltip({ active, payload, label }: any) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="bg-popover border border-border rounded-lg px-3 py-2 shadow-lg">
-      <p className="text-xs text-muted-foreground font-mono mb-1">{label}</p>
-      {payload.map((p: any, i: number) => (
-        <p key={i} className="text-sm font-mono font-semibold" style={{ color: p.color }}>
-          {p.name}: ${p.value?.toLocaleString()}
-        </p>
-      ))}
-    </div>
-  );
-}
+export default function Backtest() {
+  usePageTitle("Backtest");
+  const [strategy, setStrategy] = useState("Mean Reversion");
+  const [symbol, setSymbol] = useState("WTI");
+  const [preset, setPreset] = useState("6M");
+  const [initialBalance, setInitialBalance] = useState(100000);
+  const [running, setRunning] = useState(false);
+  const [result, setResult] = useState<BacktestResult | null>(null);
+  const [history, setHistory] = useState<any[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
-export default function BacktestResults() {
-  const [, setLocation] = useLocation();
-  const [loading, setLoading] = useState(true);
-  const [sortField, setSortField] = useState<string>("id");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const { startDate, endDate } = useMemo(() => {
+    const end = new Date();
+    const presetObj = DATE_PRESETS.find(p => p.label === preset)!;
+    const start = new Date();
+    start.setMonth(end.getMonth() - presetObj.months);
+    return {
+      startDate: start.toISOString().split("T")[0],
+      endDate: end.toISOString().split("T")[0],
+    };
+  }, [preset]);
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 2200);
-    return () => clearTimeout(timer);
-  }, []);
+    api.backtest.list(10).then(r => setHistory(r.backtests || [])).catch(() => {});
+  }, [running]);
 
-  const sortedTrades = [...tradeList].sort((a, b) => {
-    const aVal = (a as any)[sortField];
-    const bVal = (b as any)[sortField];
-    if (typeof aVal === "number") return sortDir === "asc" ? aVal - bVal : bVal - aVal;
-    return sortDir === "asc"
-      ? String(aVal).localeCompare(String(bVal))
-      : String(bVal).localeCompare(String(aVal));
-  });
-
-  const handleSort = (field: string) => {
-    if (sortField === field) {
-      setSortDir(sortDir === "asc" ? "desc" : "asc");
-    } else {
-      setSortField(field);
-      setSortDir("asc");
+  async function runBacktest() {
+    setRunning(true);
+    setResult(null);
+    setSelectedId(null);
+    try {
+      const r = await api.backtest.run({
+        strategy, symbol,
+        startDate, endDate,
+        initialBalance,
+        params: strategy === "Mean Reversion" ? { lookback: 20, threshold: 0.05, holdDays: 5 } : undefined,
+      });
+      setResult(r.result);
+      setSelectedId(r.id);
+      toast.success(`Backtest completed: ${r.result.metrics.totalTrades} trades`);
+    } catch (err: any) {
+      toast.error(err?.message || "Backtest failed");
+    } finally {
+      setRunning(false);
     }
-  };
+  }
 
-  const SortIcon = ({ field }: { field: string }) => {
-    if (sortField !== field) return null;
-    return sortDir === "asc" ? (
-      <ChevronUp className="w-3 h-3" />
-    ) : (
-      <ChevronDown className="w-3 h-3" />
-    );
-  };
+  async function loadBacktest(id: string) {
+    try {
+      const r = await api.backtest.get(id);
+      if (r.result) setResult(r.result);
+      setSelectedId(id);
+    } catch (err) {
+      toast.error("Failed to load backtest");
+    }
+  }
+
+  function downloadCsv() {
+    if (!selectedId) return;
+    window.open(`https://aether-energy.ai/api/backtest/${selectedId}/export.csv`, "_blank");
+  }
+
+  const equityData = useMemo(() => {
+    if (!result) return [];
+    return result.equityCurve.map(p => ({
+      ts: p.timestamp,
+      date: new Date(p.timestamp).toLocaleDateString(),
+      equity: Math.round(p.equity),
+    }));
+  }, [result]);
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="relative rounded-xl overflow-hidden">
-        <div
-          className="absolute inset-0 bg-cover bg-center opacity-15"
-          style={{ backgroundImage: `url(${STRATEGY_BG})` }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/80 to-transparent" />
-        <div className="relative p-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-display font-bold text-foreground mb-1">
-              Backtest Results
-            </h1>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-[10px] font-mono border-primary/30 text-primary">
-                CL (Crude Oil)
-              </Badge>
-              <Badge variant="outline" className="text-[10px] font-mono">
-                Mean Reversion
-              </Badge>
-              <span className="text-xs text-muted-foreground">
-                2016-01 → 2025-12 · Daily
-              </span>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-xs"
-              onClick={() => setLocation("/dashboard/optimization")}
-            >
-              <Settings2 className="w-3.5 h-3.5 mr-1" />
-              Optimize
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-xs"
-              onClick={() => {
-                import("sonner").then(({ toast }) =>
-                  toast.success("Report downloaded!")
-                );
-              }}
-            >
-              <Download className="w-3.5 h-3.5 mr-1" />
-              Export
-            </Button>
-          </div>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-display font-bold tracking-tight">Backtest</h1>
+          <p className="text-sm text-muted-foreground mt-1">Run strategies against historical data from Yahoo Finance.</p>
         </div>
       </div>
 
-      <AnimatePresence mode="wait">
-        {loading ? (
-          <motion.div
-            key="loading"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="flex flex-col items-center justify-center py-24"
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        <div className="lg:col-span-3 glass-card rounded-xl p-5 space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1.5">Strategy</label>
+              <select
+                value={strategy}
+                onChange={e => setStrategy(e.target.value)}
+                className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
+                disabled={running}
+              >
+                {STRATEGIES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+              </select>
+              <p className="text-xs text-muted-foreground mt-1.5">
+                {STRATEGIES.find(s => s.value === strategy)?.desc}
+              </p>
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1.5">Symbol</label>
+              <select
+                value={symbol}
+                onChange={e => setSymbol(e.target.value)}
+                className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
+                disabled={running}
+              >
+                {SYMBOLS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1.5">Period</label>
+              <div className="flex gap-1">
+                {DATE_PRESETS.map(p => (
+                  <button
+                    key={p.label}
+                    onClick={() => setPreset(p.label)}
+                    disabled={running}
+                    className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                      preset === p.label
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-card border border-border hover:border-primary/50"
+                    } disabled:opacity-50`}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1.5">
+                {startDate} → {endDate}
+              </p>
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1.5">Initial balance ($)</label>
+              <input
+                type="number"
+                value={initialBalance}
+                onChange={e => setInitialBalance(Number(e.target.value))}
+                min={1000}
+                max={10_000_000}
+                step={1000}
+                disabled={running}
+                className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+          <button
+            onClick={runBacktest}
+            disabled={running}
+            className="w-full sm:w-auto px-6 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            <div className="relative">
-              <Loader2 className="w-10 h-10 text-primary animate-spin" />
-              <div className="absolute inset-0 w-10 h-10 rounded-full border-2 border-primary/20 animate-ping" />
-            </div>
-            <p className="text-sm text-muted-foreground mt-4 font-display">
-              Running backtest on 10 years of data...
-            </p>
-            <div className="w-48 h-1 bg-secondary rounded-full mt-3 overflow-hidden">
-              <motion.div
-                className="h-full bg-primary rounded-full"
-                initial={{ width: "0%" }}
-                animate={{ width: "100%" }}
-                transition={{ duration: 2, ease: "easeInOut" }}
-              />
-            </div>
-            <p className="text-xs text-muted-foreground/60 mt-2 font-mono">
-              Processing 2,520 trading days...
-            </p>
-          </motion.div>
-        ) : (
-          <motion.div
-            key="results"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-6"
-          >
-            {/* Metrics Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
-              <MetricTile
-                label="CAGR"
-                value={`${backtestMetrics.cagr}%`}
-                icon={TrendingUp}
-                color="text-profit"
-              />
-              <MetricTile
-                label="Sharpe Ratio"
-                value={backtestMetrics.sharpe.toFixed(2)}
-                icon={Target}
-                color="text-primary"
-              />
-              <MetricTile
-                label="Win Rate"
-                value={`${backtestMetrics.winRate}%`}
-                icon={Percent}
-                color="text-primary"
-              />
-              <MetricTile
-                label="Max Drawdown"
-                value={`${backtestMetrics.maxDrawdown}%`}
-                icon={TrendingDown}
-                color="text-loss"
-              />
-              <MetricTile
-                label="Profit Factor"
-                value={backtestMetrics.profitFactor.toFixed(2)}
-                icon={BarChart3}
-                color="text-primary"
-              />
-              <MetricTile
-                label="Trade Count"
-                value={String(backtestMetrics.tradeCount)}
-                icon={Hash}
-                color="text-muted-foreground"
-              />
-              <MetricTile
-                label="Avg Win"
-                value={`${backtestMetrics.avgWin}%`}
-                icon={ArrowUpRight}
-                color="text-profit"
-              />
-              <MetricTile
-                label="Avg Loss"
-                value={`${backtestMetrics.avgLoss}%`}
-                icon={ArrowDownRight}
-                color="text-loss"
-              />
-              <MetricTile
-                label="Total Return"
-                value={`${backtestMetrics.totalReturn}%`}
-                icon={TrendingUp}
-                color="text-profit"
-              />
-              <MetricTile
-                label="Ann. Volatility"
-                value={`${backtestMetrics.annualizedVol}%`}
-                icon={Shield}
-                color="text-muted-foreground"
-              />
-            </div>
+            {running ? <><Loader2 className="w-4 h-4 animate-spin" /> Running...</> : <><Play className="w-4 h-4" /> Run backtest</>}
+          </button>
+        </div>
 
-            {/* Equity Curve */}
-            <Card className="bg-card border-border">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-display font-semibold flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4 text-primary" />
-                  Equity Curve
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[320px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={equityCurveData}>
-                      <defs>
-                        <linearGradient id="equityGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="oklch(0.82 0.15 195)" stopOpacity={0.3} />
-                          <stop offset="95%" stopColor="oklch(0.82 0.15 195)" stopOpacity={0} />
-                        </linearGradient>
-                        <linearGradient id="benchGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="oklch(0.6 0.015 250)" stopOpacity={0.15} />
-                          <stop offset="95%" stopColor="oklch(0.6 0.015 250)" stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        stroke="oklch(0.25 0.015 250)"
-                        vertical={false}
-                      />
-                      <XAxis
-                        dataKey="date"
-                        tick={{ fontSize: 10, fill: "oklch(0.6 0.015 250)", fontFamily: "'JetBrains Mono'" }}
-                        axisLine={{ stroke: "oklch(0.25 0.015 250)" }}
-                        tickLine={false}
-                        interval={11}
-                      />
-                      <YAxis
-                        tick={{ fontSize: 10, fill: "oklch(0.6 0.015 250)", fontFamily: "'JetBrains Mono'" }}
-                        axisLine={false}
-                        tickLine={false}
-                        tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
-                      />
-                      <Tooltip content={<CustomTooltip />} />
-                      <Legend
-                        wrapperStyle={{ fontSize: 11, fontFamily: "'JetBrains Mono'" }}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="equity"
-                        name="Strategy"
-                        stroke="oklch(0.82 0.15 195)"
-                        strokeWidth={2}
-                        fill="url(#equityGrad)"
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="benchmark"
-                        name="Benchmark"
-                        stroke="oklch(0.5 0.015 250)"
-                        strokeWidth={1}
-                        strokeDasharray="4 4"
-                        fill="url(#benchGrad)"
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Trade List */}
-            <Card className="bg-card border-border">
-              <CardHeader className="pb-2">
+        <div className="glass-card rounded-xl p-5 space-y-2">
+          <div className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-2">Recent backtests</div>
+          {history.length === 0 ? (
+            <div className="text-xs text-muted-foreground py-4 text-center">No backtests yet</div>
+          ) : (
+            history.map(b => (
+              <button
+                key={b.id}
+                onClick={() => loadBacktest(b.id)}
+                className={`w-full text-left p-2 rounded-lg text-xs hover:bg-accent/30 transition-colors ${selectedId === b.id ? "bg-accent/50" : ""}`}
+              >
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-display font-semibold flex items-center gap-2">
-                    <Hash className="w-4 h-4 text-primary" />
-                    Trade List
-                  </CardTitle>
-                  <span className="text-xs text-muted-foreground font-mono">
-                    Showing {tradeList.length} recent trades
+                  <span className="font-medium">{b.strategy} · {b.symbol}</span>
+                  <span className={b.totalReturn != null && b.totalReturn >= 0 ? "text-emerald-400" : "text-red-400"}>
+                    {b.totalReturn != null ? `${(b.totalReturnPct * 100).toFixed(2)}%` : "—"}
                   </span>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-border">
-                        {[
-                          { key: "id", label: "#" },
-                          { key: "asset", label: "Asset" },
-                          { key: "direction", label: "Direction" },
-                          { key: "entry", label: "Entry" },
-                          { key: "exit", label: "Exit" },
-                          { key: "entryPrice", label: "Entry Price" },
-                          { key: "exitPrice", label: "Exit Price" },
-                          { key: "returnPct", label: "Return" },
-                          { key: "pnl", label: "P&L" },
-                        ].map((col) => (
-                          <th
-                            key={col.key}
-                            onClick={() => handleSort(col.key)}
-                            className="text-left py-2 px-2 text-[10px] text-muted-foreground uppercase tracking-wider font-medium cursor-pointer hover:text-foreground transition-colors"
-                          >
-                            <span className="flex items-center gap-1">
-                              {col.label}
-                              <SortIcon field={col.key} />
-                            </span>
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {sortedTrades.map((trade) => (
-                        <tr
-                          key={trade.id}
-                          className="border-b border-border/30 hover:bg-accent/30 transition-colors"
-                        >
-                          <td className="py-2 px-2 font-mono text-xs text-muted-foreground">
-                            {trade.id}
-                          </td>
-                          <td className="py-2 px-2 text-xs font-medium">
-                            {trade.asset}
-                          </td>
-                          <td className="py-2 px-2">
-                            <Badge
-                              variant="outline"
-                              className={`text-[10px] font-mono ${
-                                trade.direction === "Long"
-                                  ? "border-profit/30 text-profit"
-                                  : "border-loss/30 text-loss"
-                              }`}
-                            >
-                              {trade.direction}
-                            </Badge>
-                          </td>
-                          <td className="py-2 px-2 text-xs font-mono text-muted-foreground">
-                            {trade.entry}
-                          </td>
-                          <td className="py-2 px-2 text-xs font-mono text-muted-foreground">
-                            {trade.exit}
-                          </td>
-                          <td className="py-2 px-2 text-xs font-mono">
-                            ${trade.entryPrice.toFixed(2)}
-                          </td>
-                          <td className="py-2 px-2 text-xs font-mono">
-                            ${trade.exitPrice.toFixed(2)}
-                          </td>
-                          <td
-                            className={`py-2 px-2 text-xs font-mono font-semibold ${
-                              trade.returnPct >= 0 ? "text-profit" : "text-loss"
-                            }`}
-                          >
-                            {trade.returnPct >= 0 ? "+" : ""}
-                            {trade.returnPct.toFixed(2)}%
-                          </td>
-                          <td
-                            className={`py-2 px-2 text-xs font-mono font-semibold ${
-                              trade.pnl >= 0 ? "text-profit" : "text-loss"
-                            }`}
-                          >
-                            {trade.pnl >= 0 ? "+" : ""}${trade.pnl.toLocaleString()}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="text-muted-foreground text-[10px] mt-0.5">
+                  {new Date(b.createdAt).toLocaleString()}
                 </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              </button>
+            ))
+          )}
+        </div>
+      </div>
+
+      {result && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <MetricCard
+              icon={<DollarSign className="w-4 h-4" />}
+              label="Final equity"
+              value={`$${result.finalEquity.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+              sub={`${result.totalReturn >= 0 ? "+" : ""}$${result.totalReturn.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+              color={result.totalReturn >= 0 ? "good" : "bad"}
+            />
+            <MetricCard
+              icon={<Percent className="w-4 h-4" />}
+              label="Total return"
+              value={`${(result.totalReturnPct * 100).toFixed(2)}%`}
+              sub={`vs buy & hold: ${(result.metrics.buyAndHoldReturn * 100).toFixed(2)}%`}
+              color={result.totalReturnPct >= result.metrics.buyAndHoldReturn ? "good" : "neutral"}
+            />
+            <MetricCard
+              icon={<Target className="w-4 h-4" />}
+              label="Sharpe ratio"
+              value={result.metrics.sharpeRatio.toFixed(3)}
+              sub={result.metrics.sharpeRatio > 1 ? "Strong" : result.metrics.sharpeRatio > 0 ? "Positive" : "Negative"}
+              color={result.metrics.sharpeRatio > 1 ? "good" : result.metrics.sharpeRatio > 0 ? "neutral" : "bad"}
+            />
+            <MetricCard
+              icon={<Shield className="w-4 h-4" />}
+              label="Max drawdown"
+              value={`${(result.metrics.maxDrawdownPct * 100).toFixed(2)}%`}
+              sub={`$${result.metrics.maxDrawdown.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+              color="bad"
+            />
+            <MetricCard
+              icon={<Hash className="w-4 h-4" />}
+              label="Trades"
+              value={String(result.metrics.totalTrades)}
+              sub={`Win rate: ${(result.metrics.winRate * 100).toFixed(1)}%`}
+              color="neutral"
+            />
+            <MetricCard
+              icon={<TrendingUp className="w-4 h-4" />}
+              label="Avg profit"
+              value={`$${result.metrics.avgProfit.toFixed(2)}`}
+              sub={`${(result.metrics.avgProfitPct * 100).toFixed(2)}% per trade`}
+              color={result.metrics.avgProfit >= 0 ? "good" : "bad"}
+            />
+            <MetricCard
+              icon={<BarChart3 className="w-4 h-4" />}
+              label="Buy & hold return"
+              value={`${(result.metrics.buyAndHoldReturn * 100).toFixed(2)}%`}
+              sub="Baseline"
+              color="neutral"
+            />
+            <MetricCard
+              icon={<Sparkles className="w-4 h-4" />}
+              label="Source"
+              value="Yahoo Finance"
+              sub="15-min delayed"
+              color="neutral"
+            />
+          </div>
+
+          <div className="glass-card rounded-xl p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="text-sm font-display font-semibold">Equity curve</h3>
+                <p className="text-xs text-muted-foreground">${result.initialBalance.toLocaleString()} → ${result.finalEquity.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+              </div>
+              <button onClick={downloadCsv} className="px-3 py-1.5 text-xs bg-card border border-border rounded-lg hover:border-primary/50 flex items-center gap-1.5">
+                <Download className="w-3.5 h-3.5" /> Export trades CSV
+              </button>
+            </div>
+            <ResponsiveContainer width="100%" height={300}>
+              <AreaChart data={equityData}>
+                <defs>
+                  <linearGradient id="eqGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={result.totalReturn >= 0 ? "#10b981" : "#ef4444"} stopOpacity={0.3} />
+                    <stop offset="100%" stopColor={result.totalReturn >= 0 ? "#10b981" : "#ef4444"} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid stroke="rgba(255,255,255,0.05)" />
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#71717a" }} minTickGap={50} />
+                <YAxis tick={{ fontSize: 10, fill: "#71717a" }} domain={["auto", "auto"]} tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: "#0a0a0e", border: "1px solid #27272a", borderRadius: 8, fontSize: 12 }}
+                  labelStyle={{ color: "#a3a3a3" }}
+                  formatter={(v: number) => [`$${v.toLocaleString()}`, "Equity"]}
+                />
+                <ReferenceLine y={result.initialBalance} stroke="#71717a" strokeDasharray="3 3" label={{ value: "Initial", fontSize: 10, fill: "#71717a" }} />
+                <Area type="monotone" dataKey="equity" stroke={result.totalReturn >= 0 ? "#10b981" : "#ef4444"} fill="url(#eqGrad)" strokeWidth={2} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="glass-card rounded-xl p-5">
+            <h3 className="text-sm font-display font-semibold mb-3">Trade log ({result.trades.length})</h3>
+            {result.trades.length === 0 ? (
+              <div className="text-xs text-muted-foreground py-4 text-center">No trades executed</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="text-muted-foreground text-left border-b border-border">
+                      <th className="py-2 px-2">Entry</th>
+                      <th className="py-2 px-2">Exit</th>
+                      <th className="py-2 px-2 text-right">Entry $</th>
+                      <th className="py-2 px-2 text-right">Exit $</th>
+                      <th className="py-2 px-2 text-right">Qty</th>
+                      <th className="py-2 px-2 text-right">P&L</th>
+                      <th className="py-2 px-2 text-right">P&L %</th>
+                      <th className="py-2 px-2">Reason</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {result.trades.map(t => (
+                      <tr key={t.id} className="border-b border-border/50">
+                        <td className="py-2 px-2 font-mono text-[10px]">{new Date(t.entryTime).toLocaleDateString()}</td>
+                        <td className="py-2 px-2 font-mono text-[10px]">{t.exitTime ? new Date(t.exitTime).toLocaleDateString() : "—"}</td>
+                        <td className="py-2 px-2 text-right font-mono">${t.entryPrice.toFixed(2)}</td>
+                        <td className="py-2 px-2 text-right font-mono">{t.exitPrice ? `$${t.exitPrice.toFixed(2)}` : "—"}</td>
+                        <td className="py-2 px-2 text-right font-mono">{t.quantity}</td>
+                        <td className={`py-2 px-2 text-right font-mono font-semibold ${(t.pnl || 0) >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                          {(t.pnl || 0) >= 0 ? "+" : ""}${t.pnl?.toFixed(2) || "0.00"}
+                        </td>
+                        <td className={`py-2 px-2 text-right font-mono ${(t.pnlPct || 0) >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                          {t.pnlPct ? `${(t.pnlPct * 100).toFixed(2)}%` : "—"}
+                        </td>
+                        <td className="py-2 px-2 text-muted-foreground text-[10px]">{t.reason}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      )}
+
+      {!result && !running && (
+        <div className="glass-card rounded-xl p-12 text-center">
+          <BarChart3 className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+          <h3 className="text-lg font-display font-semibold mb-1">No backtest yet</h3>
+          <p className="text-sm text-muted-foreground">Choose a strategy, symbol, and period above, then click "Run backtest".</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MetricCard({ icon, label, value, sub, color }: { icon: React.ReactNode; label: string; value: string; sub?: string; color: "good" | "bad" | "neutral" }) {
+  const colorClass = color === "good" ? "text-emerald-400" : color === "bad" ? "text-red-400" : "text-foreground";
+  return (
+    <div className="glass-card rounded-xl p-4">
+      <div className="flex items-center gap-2 text-muted-foreground text-xs mb-2">
+        {icon}
+        <span className="uppercase tracking-wider font-semibold">{label}</span>
+      </div>
+      <div className={`text-xl font-display font-bold ${colorClass}`}>{value}</div>
+      {sub && <div className="text-xs text-muted-foreground mt-1">{sub}</div>}
     </div>
   );
 }

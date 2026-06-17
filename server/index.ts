@@ -46,6 +46,8 @@ import legalRoutes from "./routes/legal";
 import alertRoutes from "./routes/alerts";
 import backtestRoutes from "./routes/backtest";
 import customStrategyRoutes from "./routes/customStrategies";
+import strategyTemplateRoutes from "./routes/strategyTemplates";
+import exportRoutes from "./routes/export";
 import { setupWebSocket } from "./ws/index";
 import { runMigrations } from "./db";
 import { startIngest, stopIngest } from "./services/data/ingest";
@@ -184,6 +186,8 @@ async function startServer() {
   app.use("/api/alerts", alertRoutes);
   app.use("/api/backtest", backtestRoutes);
   app.use("/api/strategies", customStrategyRoutes);
+  app.use("/api/strategies", strategyTemplateRoutes);
+  app.use("/api", exportRoutes);
   app.use("/api", openapiRoutes);
 
   // CSP report collector

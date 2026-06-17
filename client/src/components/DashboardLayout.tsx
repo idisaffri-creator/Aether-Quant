@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { AgentChat } from "@/components/agents/AgentChat";
 import NotificationBell from "@/components/NotificationBell";
 import Onboarding from "@/components/Onboarding";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   LayoutDashboard,
   Lightbulb,
@@ -403,7 +404,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             </span>
           </div>
 
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-3 sm:gap-5">
+            <div className="hidden sm:block">
+              <ThemeToggle />
+            </div>
             {/* Market status */}
             <div className="hidden md:flex items-center gap-3 px-4 py-1.5 rounded-full bg-white/[0.03] border border-white/5 text-xs font-mono font-medium">
               <span className="text-muted-foreground">CL:</span>
