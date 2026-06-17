@@ -44,10 +44,14 @@ export function installShutdown(server: { close: (cb?: () => void) => void; clos
         logger.info("closing Redis");
         redis.quit().catch(() => {}).finally(next);
       } else if (step === 4) {
-        logger.info("closing DB pool");
-        // postgres-js pool closes when process exits; nothing to do
-        next();
-      } else {
+      logger.info("stopping ingest worker");
+      try {
+        // Lazy import to avoid circular dep at module load
+        const { stopIngest } = require("../services/data/ingest");
+        stopIngest();
+      } catch { /* ignore */ }
+      next();
+    } else {
         logger.info("shutdown complete");
         process.exit(0);
       }

@@ -135,6 +135,38 @@ export const api = {
     history: (symbol: string, resolution = "1h", count = 100) =>
       request<Candle[]>(`/market/history/${symbol}?resolution=${resolution}&count=${count}`),
   },
+  data: {
+    status: () => request<{
+      yahoo: { healthy: boolean; latencyMs: number; lastFetch: string | null; symbolCount: number; error?: string };
+      eia: { healthy: boolean; configured: boolean; lastFetch: string | null; error?: string };
+      newsapi: { healthy: boolean; configured: boolean; lastFetch: string | null; remaining: number | null; error?: string };
+      gdelt: { healthy: boolean; lastFetch: string | null; error?: string };
+      ollama: { reachable: boolean; model: string };
+      lastRun: { quotes: string | null; eia: string | null; news: string | null; signals: string | null };
+      ingestHealthy: boolean;
+      eiaSeries: { id: string; name: string; unit: string }[];
+      upgrade: { eia: string | null; newsapi: string | null; ollama: string | null };
+    }>("/data/status"),
+  },
+  news: {
+    list: (params: { limit?: number; ticker?: string; sentiment?: "bullish" | "bearish" | "neutral"; source?: "newsapi" | "gdelt" | "mock" } = {}) => {
+      const qs = new URLSearchParams();
+      Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== "") qs.append(k, String(v)); });
+      return request<{ articles: Array<{
+        title: string;
+        description: string | null;
+        url: string;
+        source: string;
+        author: string | null;
+        publishedAt: string;
+        urlToImage: string | null;
+        content: string | null;
+        tickers: string[];
+        sentiment?: "bullish" | "bearish" | "neutral";
+        sentimentScore?: number;
+      }>; total: number; source: string }>(`/news?${qs.toString()}`);
+    },
+  },
   analysis: {
     full: (symbol: string, resolution = "1h", count = 100) =>
       request<AnalysisFullResult>(`/analysis/${symbol}?resolution=${resolution}&count=${count}`),

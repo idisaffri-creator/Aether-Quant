@@ -22,6 +22,8 @@ import auth2faRoutes from "./routes/auth2fa";
 import gdprRoutes from "./routes/gdpr";
 import oauthRoutes from "./routes/oauth";
 import marketRoutes from "./routes/market";
+import dataRoutes from "./routes/data";
+import newsRoutes from "./routes/news";
 import agentRoutes from "./routes/agents";
 import analysisRoutes from "./routes/analysis";
 import benchmarkRoutes from "./routes/benchmark";
@@ -34,6 +36,8 @@ import adminMailRoutes from "./routes/adminMail";
 import adminUsersRoutes from "./routes/adminUsers";
 import { setupWebSocket } from "./ws/index";
 import { runMigrations } from "./db";
+import { startIngest, stopIngest } from "./services/data/ingest";
+import { registerClient } from "./ws/tickBroadcaster";
 import "./lib/redis"; // init redis client at startup
 
 const __filename = fileURLToPath(import.meta.url);
@@ -146,6 +150,8 @@ async function startServer() {
   app.use("/api/auth/me", gdprRoutes); // /export, DELETE /
   app.use("/api/auth", oauthRoutes);
   app.use("/api/market", marketRoutes);
+  app.use("/api/data", dataRoutes);
+  app.use("/api/news", newsRoutes);
   app.use("/api/agents", agentRoutes);
   app.use("/api/analysis", analysisRoutes);
   app.use("/api/benchmark", benchmarkRoutes);
@@ -164,6 +170,13 @@ async function startServer() {
 
   // ─── WebSocket ───────────────────────────────────────────────────────
   const wss = setupWebSocket(server);
+  // Register each new client with the tick broadcaster
+  wss.on("connection", (ws) => {
+    registerClient(ws);
+  });
+
+  // ─── Ingest worker (real-time data pipeline) ────────────────────────
+  startIngest();
 
   // ─── Static files with proper cache headers ─────────────────────────
   const staticPath =
