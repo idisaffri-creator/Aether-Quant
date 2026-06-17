@@ -1,19 +1,28 @@
 /*
- * Aether Energy — Landing Page (Enterprise Trading Portal)
- * Streamlined: Hero → Stats → Platform → AgentFleet → CTASection
- * Removed marketing-heavy sections (testimonials, pricing tiers, roadmap, etc.)
+ * Aether Energy — Landing Page (2026 Revamp)
+ *
+ * Flow:
+ *   1. MarketTicker       — live prices scrolling
+ *   2. HeroSection        — bold promise + dual CTA
+ *   3. TrustStrip         — real platform stats
+ *   4. LiveTradingFloor   — real-time activity feed
+ *   5. AgentFleet         — meet your 6 AI trading agents
+ *   6. QuantTools         — backtest + Monte Carlo
+ *   7. RiskSafety         — what protects your money
+ *   8. CTA                — convert
+ *   9. Footer
  */
 import { lazy, Suspense } from "react";
 import { usePageTitle } from "@/lib/usePageTitle";
 import Navbar from "@/components/Navbar";
 import MarketTicker from "@/components/sections/MarketTicker";
 import HeroSection from "@/components/sections/HeroSection";
-import StatsSection from "@/components/sections/StatsSection";
+import TrustStrip from "@/components/sections/TrustStrip";
+import LiveTradingFloorSection from "@/components/sections/LiveTradingFloorSection";
 
-const PlatformSection = lazy(() => import("@/components/sections/PlatformSection"));
-const LiveDataSection = lazy(() => import("@/components/sections/LiveDataSection"));
-const ImpactSection = lazy(() => import("@/components/sections/ImpactSection"));
 const AgentFleetSection = lazy(() => import("@/components/sections/AgentFleetSection"));
+const QuantToolsSection = lazy(() => import("@/components/sections/QuantToolsSection"));
+const RiskSafetySection = lazy(() => import("@/components/sections/RiskSafetySection"));
 const CTASection = lazy(() => import("@/components/sections/CTASection"));
 const Footer = lazy(() => import("@/components/Footer"));
 
@@ -31,22 +40,22 @@ export default function Home() {
     <div className="min-h-screen bg-background text-foreground">
       <Navbar />
       <MarketTicker />
-      <HeroSection />
-      <StatsSection />
+      <div id="hero"><HeroSection /></div>
+      <TrustStrip />
+      <div id="floor">
+        <LiveTradingFloorSection />
+      </div>
       <Suspense fallback={<SectionSkeleton />}>
-        <LiveDataSection />
+        <div id="fleet"><AgentFleetSection /></div>
       </Suspense>
       <Suspense fallback={<SectionSkeleton />}>
-        <PlatformSection />
+        <div id="quant"><QuantToolsSection /></div>
       </Suspense>
       <Suspense fallback={<SectionSkeleton />}>
-        <ImpactSection />
+        <div id="safety"><RiskSafetySection /></div>
       </Suspense>
       <Suspense fallback={<SectionSkeleton />}>
-        <AgentFleetSection />
-      </Suspense>
-      <Suspense fallback={<SectionSkeleton />}>
-        <CTASection />
+        <div id="cta"><CTASection /></div>
       </Suspense>
       <Suspense fallback={<SectionSkeleton />}>
         <Footer />

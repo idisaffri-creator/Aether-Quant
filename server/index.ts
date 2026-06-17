@@ -64,7 +64,11 @@ import priceAlertRoutes from "./routes/priceAlerts";
 import apiKeyRoutes from "./routes/apiKeys";
 import apiV1Routes from "./routes/apiV1";
 import ogRoutes from "./routes/og";
+import fleetRoutes from "./routes/fleet";
 import { startPriceAlertCron } from "./services/cron/priceAlerts";
+import { startHawkCron } from "./services/agents/hawk";
+import { startQuincyCron } from "./services/agents/quincy";
+import { startSageCron } from "./services/agents/sage";
 import { startBacktestWorker } from "./services/queue/backtestQueue";
 import { startDailyDigestCron } from "./services/cron/dailyDigest";
 import { startTournamentCron } from "./services/cron/tournament";
@@ -224,6 +228,7 @@ async function startServer() {
   app.use("/api/keys", apiKeyRoutes);
   app.use("/api/v1", apiV1Routes);
   app.use("/og", ogRoutes);
+  app.use("/api/agents", fleetRoutes);
   app.use("/api", calendarRoutes);
   app.use("/api", exportRoutes);
   app.use("/api", openapiRoutes);
@@ -236,6 +241,9 @@ async function startServer() {
   startDailyDigestCron();
   startTournamentCron();
   startPriceAlertCron();
+  startHawkCron();
+  startQuincyCron();
+  startSageCron();
   ensureDemoTournament().catch((err) => logger.warn({ err: err.message }, "demo tournament failed"));
 
   // CSP report collector

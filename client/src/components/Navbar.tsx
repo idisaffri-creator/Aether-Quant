@@ -9,11 +9,10 @@ import { QuickStats } from "./QuickStats";
 import { LanguagePicker } from "./LanguagePicker";
 
 const navLinks = [
-  { label: "Terminal", href: "#terminal" },
-  { label: "Agents", href: "#agents" },
-  { label: "Monte Carlo", href: "#monte-carlo" },
-  { label: "Features", href: "#features" },
-  { label: "Pricing", href: "#pricing" },
+  { label: "Fleet", href: "#fleet" },
+  { label: "Quant", href: "#quant" },
+  { label: "Safety", href: "#safety" },
+  { label: "Docs", href: "/api/docs" },
 ];
 
 export default function Navbar() {
@@ -30,9 +29,18 @@ export default function Navbar() {
 
   const handleNavClick = (href: string) => {
     setMobileOpen(false);
+    if (href.startsWith("/")) {
+      // External route (e.g., docs)
+      window.location.href = href;
+      return;
+    }
+    // Smooth scroll to anchor on same page
     const el = document.querySelector(href);
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else {
+      // Section not on this page — navigate to home + anchor
+      window.location.href = `/${href}`;
     }
   };
 
