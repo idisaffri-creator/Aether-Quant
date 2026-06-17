@@ -7,6 +7,8 @@ import { eq, and, ne } from "drizzle-orm";
 import { db, schema } from "../db";
 import { generateToken, authMiddleware } from "../middleware/auth";
 import { authLimiter } from "../middleware/rateLimit";
+import { sendEmail, templates } from "../services/email";
+import { logger } from "../lib/logger";
 import type { AuthResponse, User, UserPreferences } from "../../shared/types";
 
 const router = Router();
