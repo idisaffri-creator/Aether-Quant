@@ -179,6 +179,16 @@ const paths: Record<string, any> = {
   "/api/trading/strategies/runs": { get: { summary: "List your strategy runs (P&L, trade count)", tags: ["Trading"], responses: { "200": { description: "runs" } } } },
   "/api/trading/mode": { post: { summary: "Switch paper/live trading mode (live requires KYC + Alpaca)", tags: ["Trading"], requestBody: { content: { "application/json": { schema: { type: "object", properties: { mode: { type: "string", enum: ["paper", "live"] } }, required: ["mode"] } } } }, responses: { "200": { description: "switched" }, "400": { description: "live requires KYC + Alpaca" } } } },
 
+  "/api/backtest/run": { post: { summary: "Run a backtest (Mean Reversion, Momentum, Buy & Hold)", tags: ["Backtest"], requestBody: { content: { "application/json": { schema: { type: "object", properties: { strategy: { type: "string", enum: ["Mean Reversion", "Momentum", "Buy & Hold"] }, symbol: { type: "string" }, startDate: { type: "string" }, endDate: { type: "string" }, initialBalance: { type: "number" }, params: { type: "object" } }, required: ["strategy", "symbol", "startDate", "endDate", "initialBalance"] } } } }, responses: { "201": { description: "backtest result" } } } },
+  "/api/backtest/{id}": { get: { summary: "Get a backtest result by id", tags: ["Backtest"], parameters: [pathParam("id", "Backtest ID")], responses: { "200": { description: "result" }, "404": { description: "not found" } } } },
+  "/api/backtest": { get: { summary: "List your recent backtests", tags: ["Backtest"], responses: { "200": { description: "list" } } } },
+
+  "/api/strategies/custom": { get: { summary: "List your custom strategies", tags: ["Strategies"], responses: { "200": { description: "list" } } }, post: { summary: "Create a custom strategy", tags: ["Strategies"], requestBody: { content: { "application/json": { schema: { type: "object", properties: { name: { type: "string" }, symbol: { type: "string" }, conditions: { type: "array" }, actions: { type: "array" }, enabled: { type: "boolean" } }, required: ["name", "symbol", "conditions", "actions"] } } } }, responses: { "201": { description: "created" } } } },
+  "/api/strategies/custom/{id}": { put: { summary: "Update a custom strategy", tags: ["Strategies"], parameters: [pathParam("id", "Strategy ID")], responses: { "200": { description: "updated" }, "404": { description: "not found" } } }, delete: { summary: "Delete a custom strategy", tags: ["Strategies"], parameters: [pathParam("id", "Strategy ID")], responses: { "200": { description: "deleted" } } } },
+
+  "/api/kyc/inquiry": { post: { summary: "Create a KYC inquiry (redirects to provider UI)", tags: ["KYC"], responses: { "201": { description: "inquiry created" }, "503": { description: "provider not configured" } } } },
+  "/api/kyc/webhook": { post: { summary: "Provider webhook (status updates)", tags: ["KYC"], responses: { "200": { description: "processed" } } } },
+
   "/api/admin/users": { get: { summary: "List all users (admin only)", tags: ["Admin"], responses: { "200": { description: "users" } } } },
   "/api/admin/users/stats": { get: { summary: "User counts by tier (admin only)", tags: ["Admin"], responses: { "200": { description: "counts" } } } },
   "/api/admin/mail/folders": { get: { summary: "List admin mail folders with counts", tags: ["Admin"], responses: { "200": { description: "folders" } } } },

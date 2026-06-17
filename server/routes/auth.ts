@@ -78,12 +78,15 @@ const DEFAULT_PREFS: Required<UserPreferences> = {
   privacy: { showProfile: true, showActivity: true },
 };
 
-function mergePrefs(existing: UserPreferences | null | undefined): UserPreferences {
-  if (!existing) return { ...DEFAULT_PREFS };
+function mergePrefs(existing: UserPreferences | null | undefined): UserPreferences & { onboardingCompleted?: boolean; paperBalance?: number; tradingMode?: "paper" | "live" } {
+  const ex = (existing as any) || {};
   return {
-    notifications: { ...DEFAULT_PREFS.notifications, ...(existing.notifications || {}) },
-    appearance: { ...DEFAULT_PREFS.appearance, ...(existing.appearance || {}) },
-    privacy: { ...DEFAULT_PREFS.privacy, ...(existing.privacy || {}) },
+    notifications: { ...DEFAULT_PREFS.notifications, ...(ex.notifications || {}) },
+    appearance: { ...DEFAULT_PREFS.appearance, ...(ex.appearance || {}) },
+    privacy: { ...DEFAULT_PREFS.privacy, ...(ex.privacy || {}) },
+    onboardingCompleted: ex.onboardingCompleted,
+    paperBalance: ex.paperBalance,
+    tradingMode: ex.tradingMode,
   };
 }
 
