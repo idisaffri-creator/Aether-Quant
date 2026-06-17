@@ -129,7 +129,7 @@ export default function HeroSection() {
           <div className="space-y-7">
             <motion.div variants={itemVariants} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-xs font-semibold text-primary tracking-wider uppercase">
               <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-              10 AI agents · live · 24/7
+              15 AI agents · live · 24/7
             </motion.div>
 
             <motion.h1 variants={itemVariants} className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-display font-bold tracking-tight leading-[1.02]">
@@ -138,7 +138,7 @@ export default function HeroSection() {
             </motion.h1>
 
             <motion.p variants={itemVariants} className="text-base lg:text-lg text-muted-foreground leading-relaxed max-w-xl">
-              Ten specialists that watch markets, classify regimes, scan news, validate strategies, guard risk, scan spreads, track macro events, journal your behavior, and rebalance your portfolio — around the clock, without you.
+              Fifteen specialists that watch markets, classify regimes, scan news, validate strategies, guard risk, scan spreads, track macro events, journal your behavior, rebalance your portfolio, decode COT positioning, reconcile broker accounts, hunt for backtest bias, read new research, and chase arbitrage — around the clock, without you.
               Built for serious traders who want automation <span className="text-foreground font-semibold">without giving up control</span>.
             </motion.p>
 

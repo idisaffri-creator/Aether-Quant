@@ -73,6 +73,11 @@ import { startArgusCron } from "./services/agents/argus";
 import { startMercuryCron } from "./services/agents/mercury";
 import { startEchoCron } from "./services/agents/echo";
 import { startCompassCron } from "./services/agents/compass";
+import { startAtlasCron } from "./services/agents/atlas";
+import { startLedgerCron } from "./services/agents/ledger";
+import { startCounselCron } from "./services/agents/counsel";
+import { startLibrarianCron } from "./services/agents/librarian";
+import { startHermesCron } from "./services/agents/hermes";
 import { startBacktestWorker } from "./services/queue/backtestQueue";
 import { startDailyDigestCron } from "./services/cron/dailyDigest";
 import { startTournamentCron } from "./services/cron/tournament";
@@ -252,6 +257,11 @@ async function startServer() {
   startMercuryCron();
   startEchoCron();
   startCompassCron();
+  startAtlasCron();
+  startLedgerCron();
+  startCounselCron();
+  startLibrarianCron();
+  startHermesCron();
   ensureDemoTournament().catch((err) => logger.warn({ err: err.message }, "demo tournament failed"));
 
   // CSP report collector

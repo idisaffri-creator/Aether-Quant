@@ -11,7 +11,7 @@
  * The "Meet your AI trading team" section.
  */
 import { motion } from "framer-motion";
-import { Eye, Brain, GitBranch, Shield, Newspaper, Sparkles, ArrowRight, Activity, Zap, Database, AlertTriangle, Scale, BarChart3, GitCompare } from "lucide-react";
+import { Eye, Brain, GitBranch, Shield, Newspaper, Sparkles, ArrowRight, Activity, Zap, Database, AlertTriangle, Scale, BarChart3, GitCompare, FileSearch, BookOpen, Layers, Radio } from "lucide-react";
 import { Link } from "wouter";
 
 interface Agent {
@@ -238,6 +238,111 @@ const agents: Agent[] = [
     color: "text-teal-400",
     icon: <Scale className="w-5 h-5" />,
     gradient: "from-teal-500/20 to-emerald-500/10",
+  },
+  {
+    id: "atlas",
+    name: "Atlas",
+    title: "The Mapmaker",
+    role: "COT Positioning",
+    personality: "Reads the smart money's bets every Friday. Tells you when commercials and specs are about to flip.",
+    status: "idle",
+    capabilities: [
+      "Pulls CFTC Commitments of Traders reports every Friday",
+      "Computes z-score of commercial vs speculator positioning",
+      "Flags >1.8σ extremes as contrarian signals",
+      "Tracks 5 commodities: CL, GC, SI, NG, BZ",
+    ],
+    metric: [
+      { label: "Next report", value: "Fri 3:30pm ET" },
+      { label: "Tracked", value: "5 commodities" },
+    ],
+    color: "text-orange-400",
+    icon: <Layers className="w-5 h-5" />,
+    gradient: "from-orange-500/20 to-red-500/10",
+  },
+  {
+    id: "ledger",
+    name: "Ledger",
+    title: "The Auditor",
+    role: "Position Reconciliation",
+    personality: "Trusts no one. Counts every unit. Catches drift before it costs you money.",
+    status: "idle",
+    capabilities: [
+      "Reconciles internal positions vs broker (Alpaca) daily",
+      "Flags missing / phantom / mismatched positions",
+      "Validates quantity AND average entry price",
+      "Runs weekdays 5pm ET after US close",
+    ],
+    metric: [
+      { label: "Tolerance (qty)", value: "0.01 units" },
+      { label: "Tolerance (price)", value: "0.5%" },
+    ],
+    color: "text-slate-400",
+    icon: <FileSearch className="w-5 h-5" />,
+    gradient: "from-slate-500/20 to-zinc-500/10",
+  },
+  {
+    id: "counsel",
+    name: "Counsel",
+    title: "The Skeptic",
+    role: "Backtest Bias Detector",
+    personality: "Skeptical of every backtest. Hates look-ahead bias. Catches what you missed.",
+    status: "scanning",
+    capabilities: [
+      "Flags look-ahead bias (win rate > 95% with few trades)",
+      "Detects overfitting (Sharpe > 3.5, suspicious smoothness)",
+      "Counts params vs sample size (5+ params on <2yr = overfit)",
+      "Auto-rejects if confidence < 0.4, cautions < 0.7",
+    ],
+    metric: [
+      { label: "Min trades", value: "30" },
+      { label: "Confidence threshold", value: "0.7" },
+    ],
+    color: "text-amber-400",
+    icon: <BookOpen className="w-5 h-5" />,
+    gradient: "from-amber-500/20 to-yellow-500/10",
+  },
+  {
+    id: "librarian",
+    name: "Librarian",
+    title: "The Scholar",
+    role: "Quant Papers Digest",
+    personality: "Reads 30 papers a week so you don't have to. Surfaces the 5 that matter.",
+    status: "idle",
+    capabilities: [
+      "Fetches arXiv q-fin RSS feed weekly",
+      "Scores papers on relevance to your strategies",
+      "Boosts energy/commodity/factor papers",
+      "Sends 5-paper digest every Monday 8am UTC",
+    ],
+    metric: [
+      { label: "Sources", value: "arXiv q-fin" },
+      { label: "Digest", value: "Top 5 weekly" },
+    ],
+    color: "text-fuchsia-400",
+    icon: <BookOpen className="w-5 h-5" />,
+    gradient: "from-fuchsia-500/20 to-pink-500/10",
+  },
+  {
+    id: "hermes",
+    name: "Hermes",
+    title: "The Messenger",
+    role: "Latency Arbitrage",
+    personality: "Sees prices across venues in microseconds. Catches the spread before it closes.",
+    status: "scanning",
+    capabilities: [
+      "Compares prices across Yahoo, Alpaca, Binance, CME",
+      "Detects spreads > 0.1% with net profit after fees",
+      "Alerts on profitable arb opportunities",
+      "Every 30s during weekdays",
+    ],
+    metric: [
+      { label: "Min spread", value: "0.10%" },
+      { label: "Net after fees", value: ">0%" },
+    ],
+    color: "text-sky-400",
+    icon: <Radio className="w-5 h-5" />,
+    gradient: "from-sky-500/20 to-cyan-500/10",
   },
 ];
 

@@ -83,11 +83,16 @@ export default function LiveTradingFloorSection() {
           { type: "signal", symbol: "BZ", description: "Argus: Brent-WTI spread +2.3σ — pair trade", time: "5m ago", positive: true },
           { type: "alert", symbol: "CL", description: "Mercury: EIA crude in 2hr — pausing strategies", time: "8m ago" },
           { type: "trade", symbol: "GC", description: "Compass: rebalance sell GC, buy SI", time: "12m ago" },
+          { type: "alert", symbol: "CL", description: "Atlas: commercials net long +2.1σ — bullish extreme", time: "18m ago", positive: true },
+          { type: "alert", symbol: "BZ", description: "Ledger: all positions match broker ✓", time: "22m ago" },
+          { type: "backtest", symbol: "CL", description: "Counsel: rejected backtest (Sharpe 4.2, 18 trades)", time: "25m ago" },
+          { type: "signal", symbol: "SI", description: "Librarian: 5 new quant papers in weekly digest", time: "30m ago" },
+          { type: "alert", symbol: "GC", description: "Hermes: GC arb opportunity 0.12% net", time: "35m ago" },
           ...(leaderRes.leaderboard || []).slice(0, 2).map((e: any, i: number) => ({
             type: "trade" as const,
             symbol: "PTF",
             description: `${e.username} +${signedPct(e.totalPnl / 100, 2)}`,
-            time: `${15 + i}m ago`,
+            time: `${40 + i}m ago`,
             positive: true,
           })),
         ];
@@ -123,7 +128,7 @@ export default function LiveTradingFloorSection() {
             The trading floor, <span className="text-emerald-400">always open</span>
           </h2>
           <p className="text-base lg:text-lg text-muted-foreground mt-4">
-            Ten agents, four data feeds, every market session. This isn't a demo — it's what's running right now.
+            Fifteen agents, four data feeds, every market session. This isn't a demo — it's what's running right now.
           </p>
         </div>
 
@@ -153,6 +158,11 @@ export default function LiveTradingFloorSection() {
                 <Agent name="Mercury" task="Macro calendar" status="live" />
                 <Agent name="Echo" task="Weekly journal" status="idle" />
                 <Agent name="Compass" task="Rebalance check" status="idle" />
+                <Agent name="Atlas" task="COT positioning" status="idle" />
+                <Agent name="Ledger" task="Reconciling broker" status="idle" />
+                <Agent name="Counsel" task="Reviewing backtests" status="live" />
+                <Agent name="Librarian" task="Reading papers" status="idle" />
+                <Agent name="Hermes" task="Cross-venue arb" status="live" />
               </div>
             )}
           </div>

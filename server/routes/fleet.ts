@@ -53,7 +53,7 @@ router.get("/fleet", async (_req, res) => {
       .where(sql`${schema.customStrategies.published} = 'true'`)
       .execute();
 
-    // Build fleet response — 10 agents
+    // Build fleet response — 15 agents
     const fleet = [
       {
         id: "scout",
@@ -115,6 +115,36 @@ router.get("/fleet", async (_req, res) => {
         status: "idle",
         lastAction: "Daily rebalance (weekdays 4pm ET)",
       },
+      {
+        id: "atlas",
+        name: "Atlas",
+        status: "idle",
+        lastAction: "COT positioning (Fri 4pm ET)",
+      },
+      {
+        id: "ledger",
+        name: "Ledger",
+        status: "idle",
+        lastAction: "Position reconciliation (weekdays 5pm ET)",
+      },
+      {
+        id: "counsel",
+        name: "Counsel",
+        status: "scanning",
+        lastAction: "Backtest bias review (hourly)",
+      },
+      {
+        id: "librarian",
+        name: "Librarian",
+        status: "idle",
+        lastAction: "Quant papers digest (weekly Mon 8am UTC)",
+      },
+      {
+        id: "hermes",
+        name: "Hermes",
+        status: "scanning",
+        lastAction: "Cross-venue arb scan (every 30s, weekdays)",
+      },
     ];
 
     res.json({ fleet, asOf: now.toISOString() });
@@ -133,6 +163,11 @@ router.get("/fleet", async (_req, res) => {
         { id: "mercury", name: "Mercury", status: "scanning", lastAction: "Macro event tracker" },
         { id: "echo", name: "Echo", status: "idle", lastAction: "Journal analyzer" },
         { id: "compass", name: "Compass", status: "idle", lastAction: "Portfolio rebalancer" },
+        { id: "atlas", name: "Atlas", status: "idle", lastAction: "COT positioning" },
+        { id: "ledger", name: "Ledger", status: "idle", lastAction: "Position reconciliation" },
+        { id: "counsel", name: "Counsel", status: "scanning", lastAction: "Backtest bias detector" },
+        { id: "librarian", name: "Librarian", status: "idle", lastAction: "Quant papers digest" },
+        { id: "hermes", name: "Hermes", status: "scanning", lastAction: "Cross-venue arbitrage" },
       ],
       asOf: new Date().toISOString(),
     });
