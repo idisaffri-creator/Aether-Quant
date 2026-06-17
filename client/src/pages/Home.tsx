@@ -22,6 +22,7 @@ import LiveTradingFloorSection from "@/components/sections/LiveTradingFloorSecti
 
 const AgentFleetSection = lazy(() => import("@/components/sections/AgentFleetSection"));
 const UseCasesSection = lazy(() => import("@/components/sections/UseCasesSection"));
+const StackSection = lazy(() => import("@/components/sections/StackSection"));
 const QuantToolsSection = lazy(() => import("@/components/sections/QuantToolsSection"));
 const RiskSafetySection = lazy(() => import("@/components/sections/RiskSafetySection"));
 const PlatformStatsSection = lazy(() => import("@/components/sections/PlatformStatsSection"));
@@ -55,6 +56,9 @@ export default function Home() {
       </Suspense>
       <Suspense fallback={<SectionSkeleton />}>
         <UseCasesSection />
+      </Suspense>
+      <Suspense fallback={<SectionSkeleton />}>
+        <StackSection />
       </Suspense>
       <Suspense fallback={<SectionSkeleton />}>
         <div id="quant"><QuantToolsSection /></div>
