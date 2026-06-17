@@ -80,11 +80,14 @@ export default function LiveTradingFloorSection() {
           { type: "signal", symbol: "SI", description: "Hawk tightened stop on SI long", time: "1m ago", positive: false },
           { type: "trade", symbol: "CL", description: "Paper SELL 25 @ $78.42 (take profit)", time: "2m ago", positive: true },
           { type: "alert", symbol: "HO", description: "Press flagged bearish OPEC headline", time: "4m ago" },
+          { type: "signal", symbol: "BZ", description: "Argus: Brent-WTI spread +2.3σ — pair trade", time: "5m ago", positive: true },
+          { type: "alert", symbol: "CL", description: "Mercury: EIA crude in 2hr — pausing strategies", time: "8m ago" },
+          { type: "trade", symbol: "GC", description: "Compass: rebalance sell GC, buy SI", time: "12m ago" },
           ...(leaderRes.leaderboard || []).slice(0, 2).map((e: any, i: number) => ({
             type: "trade" as const,
             symbol: "PTF",
             description: `${e.username} +${signedPct(e.totalPnl / 100, 2)}`,
-            time: `${5 + i}m ago`,
+            time: `${15 + i}m ago`,
             positive: true,
           })),
         ];
@@ -120,7 +123,7 @@ export default function LiveTradingFloorSection() {
             The trading floor, <span className="text-emerald-400">always open</span>
           </h2>
           <p className="text-base lg:text-lg text-muted-foreground mt-4">
-            Six agents, four data feeds, every market session. This isn't a demo — it's what's running right now.
+            Ten agents, four data feeds, every market session. This isn't a demo — it's what's running right now.
           </p>
         </div>
 
@@ -133,19 +136,23 @@ export default function LiveTradingFloorSection() {
             {loading ? (
               <div className="text-sm text-muted-foreground flex items-center gap-2"><Loader2 className="w-3 h-3 animate-spin" /> Loading…</div>
             ) : agents.length > 0 ? (
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {agents.map((a) => (
                   <Agent key={a.id} name={a.name} task={a.lastSignal || "Active"} status={a.active ? "live" : "idle"} />
                 ))}
               </div>
             ) : (
-              <div className="space-y-2">
-                <Agent name="Scout" task="Scanning WTI, NG, GC" status="live" />
+              <div className="space-y-1.5">
+                <Agent name="Scout" task="Watching ticks" status="live" />
                 <Agent name="Sherlock" task="Regime: Low Vol Trend" status="live" />
-                <Agent name="Quincy" task="Idle · backtests validated" status="idle" />
-                <Agent name="Hawk" task="Guarding positions" status="live" />
+                <Agent name="Quincy" task="Validating strategies" status="idle" />
+                <Agent name="Hawk" task="Watching positions" status="live" />
                 <Agent name="Press" task="Triaging headlines" status="live" />
                 <Agent name="Sage" task="Curating marketplace" status="idle" />
+                <Agent name="Argus" task="Scanning spreads" status="live" />
+                <Agent name="Mercury" task="Macro calendar" status="live" />
+                <Agent name="Echo" task="Weekly journal" status="idle" />
+                <Agent name="Compass" task="Rebalance check" status="idle" />
               </div>
             )}
           </div>

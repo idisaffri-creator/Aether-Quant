@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 
 const stats = [
   { value: "99.97%", label: "Uptime", sub: "Last 90 days" },
-  { value: "6", label: "AI Agents", sub: "Working 24/7" },
+  { value: "10", label: "AI Agents", sub: "Working 24/7" },
   { value: "8", label: "Energy Commodities", sub: "WTI, Brent, NG, metals" },
   { value: "<12ms", label: "Avg fill time", sub: "Paper trading engine" },
 ];

@@ -53,7 +53,7 @@ router.get("/fleet", async (_req, res) => {
       .where(sql`${schema.customStrategies.published} = 'true'`)
       .execute();
 
-    // Build fleet response
+    // Build fleet response — 10 agents
     const fleet = [
       {
         id: "scout",
@@ -91,6 +91,30 @@ router.get("/fleet", async (_req, res) => {
         status: "idle",
         lastAction: `Curating ${marketplaceCount[0]?.count || 0} marketplace strategies`,
       },
+      {
+        id: "argus",
+        name: "Argus",
+        status: "scanning",
+        lastAction: "Watching CL-BZ, GC-SI spreads",
+      },
+      {
+        id: "mercury",
+        name: "Mercury",
+        status: "scanning",
+        lastAction: "Next macro event: EIA crude (Wed)",
+      },
+      {
+        id: "echo",
+        name: "Echo",
+        status: "idle",
+        lastAction: "Weekly journal analysis (Sun 8pm UTC)",
+      },
+      {
+        id: "compass",
+        name: "Compass",
+        status: "idle",
+        lastAction: "Daily rebalance (weekdays 4pm ET)",
+      },
     ];
 
     res.json({ fleet, asOf: now.toISOString() });
@@ -105,6 +129,10 @@ router.get("/fleet", async (_req, res) => {
         { id: "hawk", name: "Hawk", status: "live", lastAction: "Risk monitoring" },
         { id: "press", name: "Press", status: "scanning", lastAction: "News + sentiment" },
         { id: "sage", name: "Sage", status: "idle", lastAction: "Marketplace curation" },
+        { id: "argus", name: "Argus", status: "scanning", lastAction: "Arbitrage scanner" },
+        { id: "mercury", name: "Mercury", status: "scanning", lastAction: "Macro event tracker" },
+        { id: "echo", name: "Echo", status: "idle", lastAction: "Journal analyzer" },
+        { id: "compass", name: "Compass", status: "idle", lastAction: "Portfolio rebalancer" },
       ],
       asOf: new Date().toISOString(),
     });

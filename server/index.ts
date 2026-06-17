@@ -69,6 +69,10 @@ import { startPriceAlertCron } from "./services/cron/priceAlerts";
 import { startHawkCron } from "./services/agents/hawk";
 import { startQuincyCron } from "./services/agents/quincy";
 import { startSageCron } from "./services/agents/sage";
+import { startArgusCron } from "./services/agents/argus";
+import { startMercuryCron } from "./services/agents/mercury";
+import { startEchoCron } from "./services/agents/echo";
+import { startCompassCron } from "./services/agents/compass";
 import { startBacktestWorker } from "./services/queue/backtestQueue";
 import { startDailyDigestCron } from "./services/cron/dailyDigest";
 import { startTournamentCron } from "./services/cron/tournament";
@@ -244,6 +248,10 @@ async function startServer() {
   startHawkCron();
   startQuincyCron();
   startSageCron();
+  startArgusCron();
+  startMercuryCron();
+  startEchoCron();
+  startCompassCron();
   ensureDemoTournament().catch((err) => logger.warn({ err: err.message }, "demo tournament failed"));
 
   // CSP report collector
