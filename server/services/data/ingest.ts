@@ -18,6 +18,7 @@ import { getNewsapiStatus } from "./adapters/newsapi";
 import { getGdeltStatus } from "./adapters/gdelt";
 import { getOllamaStatus } from "./adapters/ollama";
 import { broadcastTick } from "../../ws/tickBroadcaster";
+import { processTick } from "../trading/paperEngine";
 import { cacheGetSet } from "../../lib/redis";
 import { db, schema } from "../../db";
 import { eq } from "drizzle-orm";
@@ -106,6 +107,8 @@ async function runQuoteTick(): Promise<void> {
     logger.info({ total: quotes.length, live: liveCount }, "quote tick");
     // Broadcast live quotes to all WS clients
     broadcastTick({ type: "quotes", data: quotes, ts: Date.now() });
+    // Process pending paper orders against current prices
+    await processTick(quotes).catch((err) => logger.warn({ err: err.message }, "processTick failed"));
   } catch (err) {
     logger.warn({ err: (err as Error).message }, "quote tick failed");
   }

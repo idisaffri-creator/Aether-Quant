@@ -306,6 +306,18 @@ export const api = {
     delete: (id: string) => request<{ message: string; id: string }>(`/admin/users/${id}`, { method: "DELETE" }),
     stats: () => request<{ total: number; active: number; suspended: number; pending: number; admins: number; byTier: Record<string, number> }>("/admin/users/stats"),
   },
+  trading: {
+    submitOrder: (data: { symbol: string; side: "buy" | "sell"; type: "market" | "limit" | "stop"; quantity: number; limitPrice?: number; stopPrice?: number; strategyId?: string }) =>
+      request<{ order: { id: string; userId: string; strategyId: string | null; symbol: string; side: string; type: string; quantity: string; limitPrice: string | null; stopPrice: string | null; status: string; filledQty: string; avgFillPrice: string | null; rejectionReason: string | null; createdAt: string; filledAt: string | null; cancelledAt: string | null } }>("/trading/orders", { method: "POST", body: JSON.stringify(data) }),
+    listOrders: (params: { status?: string; symbol?: string; limit?: number; offset?: number } = {}) => {
+      const qs = new URLSearchParams();
+      Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== "") qs.append(k, String(v)); });
+      return request<{ orders: Array<{ id: string; symbol: string; side: string; type: string; quantity: string; limitPrice: string | null; stopPrice: string | null; status: string; filledQty: string; avgFillPrice: string | null; createdAt: string; filledAt: string | null }>; total: number }>(`/trading/orders?${qs.toString()}`);
+    },
+    cancelOrder: (id: string) => request<{ ok: boolean }>(`/trading/orders/${id}`, { method: "DELETE" }),
+    getPositions: () => request<{ positions: Array<{ id: string; symbol: string; quantity: string; avgEntryPrice: string; realizedPnl: string; updatedAt: string }> }>("/trading/positions"),
+    getPnl: () => request<{ paperBalance: number; equity: number; unrealizedPnl: number; realizedPnl: number; positions: number; totalTradeCount: number }>("/trading/pnl"),
+  },
 };
 
 export function createWebSocket(): WebSocket {

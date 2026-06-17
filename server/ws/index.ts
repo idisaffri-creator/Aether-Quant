@@ -1,63 +1,76 @@
 import { WebSocketServer, WebSocket } from "ws";
 import type { Server } from "http";
-import type { MarketData, WSMessage } from "../../shared/types";
+import { verifyToken } from "../middleware/auth";
+import { registerUserSocket } from "./userBroadcaster";
+import { logger } from "../lib/logger";
 
-const MOCK_SYMBOLS = ["WTI", "BRENT", "NGAS", "GASOL", "BHEL"];
-
-const mockPrices: Record<string, number> = {
-  WTI: 78.43,
-  BRENT: 82.17,
-  NGAS: 2.14,
-  GASOL: 2.51,
-  BHEL: 68.90,
-};
-
-function generateMockMarketData(symbol: string): MarketData {
-  const basePrice = mockPrices[symbol] || 50;
-  const change = (Math.random() - 0.5) * 4;
-  const price = basePrice + change;
-  const change24h = ((price - basePrice) / basePrice) * 100;
-
-  return {
-    symbol,
-    price: parseFloat(price.toFixed(2)),
-    change24h: parseFloat(change24h.toFixed(2)),
-    volume24h: parseFloat((Math.random() * 1000000 + 500000).toFixed(0)),
-    high24h: parseFloat((price * 1.03).toFixed(2)),
-    low24h: parseFloat((price * 0.97).toFixed(2)),
-    bid: parseFloat((price * 0.999).toFixed(2)),
-    ask: parseFloat((price * 1.001).toFixed(2)),
-    spread: parseFloat((price * 0.002).toFixed(3)),
-    timestamp: Date.now(),
-  };
-}
-
+/**
+ * WebSocket protocol.
+ *
+ * Connect to: wss://host/ws
+ * Optional auth: pass JWT as `?token=...` query param OR via first message
+ *   { type: "auth", token: "..." }
+ *
+ * Server → Client:
+ *   { type: "welcome", userId, ts }   after connect
+ *   { type: "tick", data: { quotes: MarketData[] }, ts }  every 60s
+ *   { type: "news", data: { articles, source }, ts }    every 30m
+ *   { type: "order_filled", data: { orderId, ... }, ts } private, per-user
+ *   { type: "order_cancelled", data: { orderId }, ts }  private, per-user
+ *   { type: "position_update", data: { position }, ts }  private, per-user
+ *   { type: "pong" }                                     response to ping
+ *
+ * Client → Server:
+ *   { type: "auth", token: "..." }   to authenticate after connect
+ *   { type: "ping" }                  keepalive
+ */
 export function setupWebSocket(server: Server) {
   const wss = new WebSocketServer({ server, path: "/ws" });
 
-  wss.on("connection", (ws: WebSocket) => {
-    console.log("WebSocket client connected");
+  wss.on("connection", (ws: WebSocket, req) => {
+    // Try to authenticate via ?token=... query param
+    const url = new URL(req.url || "/", "http://localhost");
+    const tokenFromQuery = url.searchParams.get("token");
+    const userId = tokenFromQuery ? tryVerify(tokenFromQuery) : null;
 
-    const interval = setInterval(() => {
-      if (ws.readyState !== WebSocket.OPEN) {
-        clearInterval(interval);
-        return;
-      }
+    logger.info({ userId, ip: req.socket.remoteAddress }, "ws client connected");
 
-      const quotes = MOCK_SYMBOLS.map(generateMockMarketData);
-      const message: WSMessage = { type: "market", payload: quotes };
-      ws.send(JSON.stringify(message));
-    }, 2000);
+    if (userId) {
+      registerUserSocket(userId, ws);
+    }
+    ws.send(JSON.stringify({ type: "welcome", userId, ts: Date.now() }));
 
-    ws.on("close", () => {
-      console.log("WebSocket client disconnected");
-      clearInterval(interval);
+    ws.on("message", (raw) => {
+      try {
+        const msg = JSON.parse(raw.toString());
+        if (msg.type === "ping") {
+          ws.send(JSON.stringify({ type: "pong", ts: Date.now() }));
+        } else if (msg.type === "auth" && msg.token) {
+          const uid = tryVerify(msg.token);
+          if (uid) {
+            registerUserSocket(uid, ws);
+            ws.send(JSON.stringify({ type: "welcome", userId: uid, ts: Date.now() }));
+          }
+        }
+      } catch { /* ignore malformed */ }
     });
 
+    ws.on("close", () => {
+      logger.debug("ws client disconnected");
+    });
     ws.on("error", () => {
-      clearInterval(interval);
+      // ignore
     });
   });
 
   return wss;
+}
+
+function tryVerify(token: string): string | null {
+  try {
+    const payload = verifyToken(token);
+    return payload.userId;
+  } catch {
+    return null;
+  }
 }

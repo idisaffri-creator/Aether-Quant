@@ -34,10 +34,12 @@ import auditQueryRoutes from "./routes/auditQuery";
 import healthRoutes from "./routes/health";
 import adminMailRoutes from "./routes/adminMail";
 import adminUsersRoutes from "./routes/adminUsers";
+import tradingRoutes from "./routes/trading";
 import { setupWebSocket } from "./ws/index";
 import { runMigrations } from "./db";
 import { startIngest, stopIngest } from "./services/data/ingest";
 import { registerClient } from "./ws/tickBroadcaster";
+import { processTick } from "./services/trading/paperEngine";
 import "./lib/redis"; // init redis client at startup
 
 const __filename = fileURLToPath(import.meta.url);
@@ -161,6 +163,7 @@ async function startServer() {
   app.use("/api/audit", auditQueryRoutes);
   app.use("/api/admin/mail", adminMailRoutes);
   app.use("/api/admin", adminUsersRoutes);
+  app.use("/api/trading", tradingRoutes);
 
   // CSP report collector
   app.post("/api/csp-report", (req, res) => {
@@ -170,7 +173,7 @@ async function startServer() {
 
   // ─── WebSocket ───────────────────────────────────────────────────────
   const wss = setupWebSocket(server);
-  // Register each new client with the tick broadcaster
+  // Register each new client with the tick broadcaster (public channel)
   wss.on("connection", (ws) => {
     registerClient(ws);
   });

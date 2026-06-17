@@ -130,3 +130,45 @@ export const auditLog = pgTable("audit_log", {
   requestId: text("request_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+export const orders = pgTable("orders", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  strategyId: text("strategy_id"),
+  symbol: text("symbol").notNull(),
+  side: text("side", { enum: ["buy", "sell"] }).notNull(),
+  type: text("type", { enum: ["market", "limit", "stop"] }).notNull(),
+  quantity: decimal("quantity", { precision: 20, scale: 8 }).notNull(),
+  limitPrice: decimal("limit_price", { precision: 20, scale: 8 }),
+  stopPrice: decimal("stop_price", { precision: 20, scale: 8 }),
+  status: text("status", { enum: ["pending", "filled", "cancelled", "rejected", "partial"] }).notNull(),
+  filledQty: decimal("filled_qty", { precision: 20, scale: 8 }).default("0").notNull(),
+  avgFillPrice: decimal("avg_fill_price", { precision: 20, scale: 8 }),
+  rejectionReason: text("rejection_reason"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  filledAt: timestamp("filled_at"),
+  cancelledAt: timestamp("cancelled_at"),
+});
+
+export const positions = pgTable("positions", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  symbol: text("symbol").notNull(),
+  quantity: decimal("quantity", { precision: 20, scale: 8 }).notNull(), // signed: + long, - short
+  avgEntryPrice: decimal("avg_entry_price", { precision: 20, scale: 8 }).notNull(),
+  realizedPnl: decimal("realized_pnl", { precision: 20, scale: 8 }).default("0").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const strategyRuns = pgTable("strategy_runs", {
+  id: text("id").primaryKey(),
+  strategyId: text("strategy_id").notNull(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  status: text("status", { enum: ["running", "stopped", "error"] }).notNull(),
+  startedAt: timestamp("started_at").defaultNow().notNull(),
+  stoppedAt: timestamp("stopped_at"),
+  totalPnl: decimal("total_pnl", { precision: 20, scale: 8 }).default("0").notNull(),
+  tradeCount: integer("trade_count").default(0).notNull(),
+  lastError: text("last_error"),
+});
