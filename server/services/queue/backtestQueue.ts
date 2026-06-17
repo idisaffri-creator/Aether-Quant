@@ -4,9 +4,12 @@
  * Long-running backtests (5+ symbols, 2+ years) are offloaded to a worker
  * so the API request thread isn't blocked. The UI polls /api/backtest/job/:id
  * to get status + result.
+ *
+ * BullMQ requires its own dedicated Redis connection (not our shared ioredis
+ * instance). Also requires maxmemory-policy=noeviction on the Redis instance.
  */
-import { Queue, Worker, type Job } from "bullmq";
-import { redis } from "../../lib/redis";
+import { Queue, Worker, type ConnectionOptions, type Job } from "bullmq";
+import IORedis from "ioredis";
 import { runBacktest, type BacktestInput } from "../trading/backtest";
 import { logger } from "../../lib/logger";
 
@@ -15,22 +18,26 @@ const RESULT_TTL_MS = 24 * 60 * 60 * 1000; // 24h
 
 let queueInstance: Queue | null = null;
 let workerInstance: Worker | null = null;
+let bullRedisInstance: IORedis | null = null;
 
-export interface BacktestJobData {
-  userId: string;
-  input: BacktestInput;
+function getRedisUrl(): string {
+  return process.env.REDIS_URL || "redis://127.0.0.1:6379";
 }
 
-export interface BacktestJobResult {
-  status: "completed" | "failed";
-  result?: any;
-  error?: string;
+function getBullRedis(): IORedis {
+  if (!bullRedisInstance) {
+    bullRedisInstance = new IORedis(getRedisUrl(), {
+      maxRetriesPerRequest: null, // BullMQ requirement
+      enableReadyCheck: false,
+    });
+  }
+  return bullRedisInstance;
 }
 
 function getQueue(): Queue {
   if (!queueInstance) {
     queueInstance = new Queue(QUEUE_NAME, {
-      connection: redis,
+      connection: getBullRedis(),
       defaultJobOptions: {
         attempts: 2,
         backoff: { type: "exponential", delay: 2000 },
@@ -84,7 +91,6 @@ export async function startBacktestWorker(): Promise<void> {
     logger.info({ jobId: job.id, userId: job.data.userId }, "backtest job started");
     try {
       const { id, result } = await runBacktest(job.data.userId, job.data.input);
-      // Persist result to DB so /api/backtest/:id works
       logger.info({ jobId: job.id, backtestId: id, totalReturn: result.totalReturnPct }, "backtest job completed");
       return { status: "completed", result: { id, ...result } };
     } catch (err) {
@@ -92,9 +98,9 @@ export async function startBacktestWorker(): Promise<void> {
       return { status: "failed", error: (err as Error).message };
     }
   }, {
-    connection: redis,
+    connection: getBullRedis(),
     concurrency: 4,
-    limiter: { max: 10, duration: 60_000 }, // 10 jobs per minute
+    limiter: { max: 10, duration: 60_000 },
   });
   workerInstance.on("completed", (job) => {
     logger.info({ jobId: job.id }, "backtest worker: job completed");
@@ -109,5 +115,13 @@ export async function stopBacktestWorker(): Promise<void> {
   if (workerInstance) {
     await workerInstance.close();
     workerInstance = null;
+  }
+  if (bullRedisInstance) {
+    bullRedisInstance.disconnect();
+    bullRedisInstance = null;
+  }
+  if (queueInstance) {
+    await queueInstance.close();
+    queueInstance = null;
   }
 }
