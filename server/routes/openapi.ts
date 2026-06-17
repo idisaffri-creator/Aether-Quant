@@ -218,6 +218,16 @@ const paths: Record<string, any> = {
   "/api/search/signals": { get: { summary: "Search signals (Meilisearch)", tags: ["Search"], responses: { "200": { description: "hits" } } } },
   "/api/search/status": { get: { summary: "Search engine status", tags: ["Search"], responses: { "200": { description: "status" } } } },
 
+  "/api/strategies/marketplace": { get: { summary: "List published strategies (search + filter)", tags: ["Marketplace"], responses: { "200": { description: "strategies" } } } },
+  "/api/strategies/marketplace/{id}": { get: { summary: "Get a published strategy", tags: ["Marketplace"], parameters: [pathParam("id", "Strategy ID")], responses: { "200": { description: "strategy" }, "404": { description: "not found" } } } },
+  "/api/strategies/custom/{id}/publish": { post: { summary: "Publish custom strategy to marketplace", tags: ["Marketplace"], parameters: [pathParam("id", "Strategy ID")], responses: { "200": { description: "published" } } } },
+  "/api/strategies/custom/{id}/unpublish": { post: { summary: "Unpublish custom strategy", tags: ["Marketplace"], parameters: [pathParam("id", "Strategy ID")], responses: { "200": { description: "unpublished" } } } },
+  "/api/strategies/custom/{id}/clone": { post: { summary: "Clone a published strategy", tags: ["Marketplace"], parameters: [pathParam("id", "Source Strategy ID")], responses: { "201": { description: "cloned" } } } },
+  "/api/strategies/custom/{id}/rate": { post: { summary: "Rate a strategy (1-5)", tags: ["Marketplace"], parameters: [pathParam("id", "Strategy ID")], responses: { "200": { description: "rated" } } } },
+
+  "/api/leaderboard": { get: { summary: "Top 50 traders by realized P&L", tags: ["Leaderboard"], responses: { "200": { description: "leaderboard" } } } },
+  "/api/leaderboard/me": { get: { summary: "My leaderboard rank + stats", tags: ["Leaderboard"], responses: { "200": { description: "my stats" } } } },
+
   "/api/storage/kyc/upload": { post: { summary: "Upload KYC document (multipart/form-data)", tags: ["Storage"], responses: { "200": { description: "key + location" } } } },
   "/api/storage/kyc/list": { get: { summary: "List your KYC documents", tags: ["Storage"], responses: { "200": { description: "objects" } } } },
   "/api/storage/kyc/download-url": { get: { summary: "Get signed download URL for KYC document", tags: ["Storage"], responses: { "200": { description: "url (1h expiry)" } } } },
