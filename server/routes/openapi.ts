@@ -192,6 +192,14 @@ const paths: Record<string, any> = {
   "/api/kyc/inquiry": { post: { summary: "Create a KYC inquiry (redirects to provider UI)", tags: ["KYC"], responses: { "201": { description: "inquiry created" }, "503": { description: "provider not configured" } } } },
   "/api/kyc/webhook": { post: { summary: "Provider webhook (status updates)", tags: ["KYC"], responses: { "200": { description: "processed" } } } },
 
+  "/api/risk/limits": { get: { summary: "Get your risk limits (max position, daily loss, max orders, kill switch)", tags: ["Risk"], responses: { "200": { description: "limits" } } }, put: { summary: "Update your risk limits", tags: ["Risk"], requestBody: { content: { "application/json": { schema: { type: "object", properties: { maxPositionSize: { type: "number" }, maxDailyLoss: { type: "number" }, maxOpenOrders: { type: "integer" }, killSwitch: { type: "boolean" } } } } } }, responses: { "200": { description: "updated" } } } },
+  "/api/risk/kill-switch": { post: { summary: "Toggle kill switch (enable/disable all new orders)", tags: ["Risk"], requestBody: { content: { "application/json": { schema: { type: "object", properties: { action: { type: "string", enum: ["enable", "disable"] } }, required: ["action"] } } } }, responses: { "200": { description: "toggled" } } } },
+
+  "/api/portfolio/analytics": { get: { summary: "Portfolio analytics: Sharpe, Sortino, max DD, win rate, exposure, per-symbol P&L", tags: ["Portfolio"], responses: { "200": { description: "metrics" } } } },
+
+  "/api/calendar/upcoming": { get: { summary: "Upcoming economic events (EIA inventory, OPEC, Fed, rig count)", tags: ["Market"], responses: { "200": { description: "events" } } } },
+  "/api/calendar": { get: { summary: "Full economic calendar (next 30 events)", tags: ["Market"], responses: { "200": { description: "events" } } } },
+
   "/api/admin/users": { get: { summary: "List all users (admin only)", tags: ["Admin"], responses: { "200": { description: "users" } } } },
   "/api/admin/users/stats": { get: { summary: "User counts by tier (admin only)", tags: ["Admin"], responses: { "200": { description: "counts" } } } },
   "/api/admin/mail/folders": { get: { summary: "List admin mail folders with counts", tags: ["Admin"], responses: { "200": { description: "folders" } } } },
