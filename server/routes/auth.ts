@@ -188,7 +188,7 @@ router.post("/login", async (req, res) => {
     // ─── DEMO MODE BYPASS ─────────────────────────────────────────────
     if (email === "demo@aether-energy.ai" && password === "demo123") {
       const demoId = "demo-user-id";
-      const token = generateToken({ userId: demoId, email });
+      const token = generateToken({ userId: demoId, email, role: "user", twoFactorEnabled: false });
       const response: AuthResponse = {
         token,
         user: {
@@ -209,7 +209,7 @@ router.post("/login", async (req, res) => {
     }
     if (email === "admin@aether-energy.ai" && password === "admin123") {
       const adminId = "admin-user-id";
-      const token = generateToken({ userId: adminId, email });
+      const token = generateToken({ userId: adminId, email, role: "admin", twoFactorEnabled: false });
       const response: AuthResponse = {
         token,
         user: {

@@ -11,6 +11,7 @@ import { eq, and, desc } from "drizzle-orm";
 import { db, schema } from "../db";
 import { authMiddleware } from "../middleware/auth";
 import { requireAdmin } from "../middleware/adminAuth";
+import { requireAdmin2FA } from "../middleware/requireAdmin2FA";
 import { logger } from "../lib/logger";
 
 const router = Router();
@@ -103,7 +104,7 @@ router.get("/status", authMiddleware, async (req, res) => {
  * GET /api/admin/kyc (admin only)
  * List all KYC submissions for review.
  */
-router.get("/admin/list", authMiddleware, requireAdmin, async (_req, res) => {
+router.get("/admin/list", authMiddleware, requireAdmin, requireAdmin2FA, async (_req, res) => {
   const rows = await db.select().from(schema.kycSubmissions)
     .orderBy(desc(schema.kycSubmissions.submittedAt))
     .limit(100)
@@ -114,7 +115,7 @@ router.get("/admin/list", authMiddleware, requireAdmin, async (_req, res) => {
 /**
  * POST /api/admin/kyc/:id/approve (admin only)
  */
-router.post("/admin/:id/approve", authMiddleware, requireAdmin, async (req, res) => {
+router.post("/admin/:id/approve", authMiddleware, requireAdmin, requireAdmin2FA, async (req, res) => {
   await db.update(schema.kycSubmissions)
     .set({ status: "approved", reviewedAt: new Date(), reviewedBy: req.user!.userId })
     .where(eq(schema.kycSubmissions.id, req.params.id))
@@ -125,7 +126,7 @@ router.post("/admin/:id/approve", authMiddleware, requireAdmin, async (req, res)
 /**
  * POST /api/admin/kyc/:id/reject (admin only)
  */
-router.post("/admin/:id/reject", authMiddleware, requireAdmin, async (req, res) => {
+router.post("/admin/:id/reject", authMiddleware, requireAdmin, requireAdmin2FA, async (req, res) => {
   const { notes } = req.body as { notes?: string };
   await db.update(schema.kycSubmissions)
     .set({ status: "rejected", reviewedAt: new Date(), reviewedBy: req.user!.userId, reviewNotes: notes || null })

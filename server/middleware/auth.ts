@@ -6,6 +6,8 @@ const JWT_SECRET = process.env.JWT_SECRET || "aether-dev-secret-change-in-produc
 export interface AuthPayload {
   userId: string;
   email: string;
+  role?: "user" | "admin";
+  twoFactorEnabled?: boolean;
 }
 
 declare global {
