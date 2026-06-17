@@ -11,6 +11,8 @@ import HeroSection from "@/components/sections/HeroSection";
 import StatsSection from "@/components/sections/StatsSection";
 
 const PlatformSection = lazy(() => import("@/components/sections/PlatformSection"));
+const LiveDataSection = lazy(() => import("@/components/sections/LiveDataSection"));
+const ImpactSection = lazy(() => import("@/components/sections/ImpactSection"));
 const AgentFleetSection = lazy(() => import("@/components/sections/AgentFleetSection"));
 const CTASection = lazy(() => import("@/components/sections/CTASection"));
 const Footer = lazy(() => import("@/components/Footer"));
@@ -32,7 +34,13 @@ export default function Home() {
       <HeroSection />
       <StatsSection />
       <Suspense fallback={<SectionSkeleton />}>
+        <LiveDataSection />
+      </Suspense>
+      <Suspense fallback={<SectionSkeleton />}>
         <PlatformSection />
+      </Suspense>
+      <Suspense fallback={<SectionSkeleton />}>
+        <ImpactSection />
       </Suspense>
       <Suspense fallback={<SectionSkeleton />}>
         <AgentFleetSection />

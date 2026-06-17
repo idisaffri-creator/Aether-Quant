@@ -58,6 +58,10 @@ import storageRoutes from "./routes/storage";
 import notificationRoutes from "./routes/notifications";
 import marketplaceRoutes from "./routes/marketplace";
 import leaderboardRoutes from "./routes/leaderboard";
+import tournamentRoutes, { ensureDemoTournament } from "./routes/tournaments";
+import { startBacktestWorker } from "./services/queue/backtestQueue";
+import { startDailyDigestCron } from "./services/cron/dailyDigest";
+import { startTournamentCron } from "./services/cron/tournament";
 import { initS3 } from "./services/storage/s3";
 import { ensureIndexes, reindexAllStrategies } from "./services/search/meilisearch";
 import { setupWebSocket } from "./ws/index";
@@ -208,6 +212,7 @@ async function startServer() {
   app.use("/api/notifications", notificationRoutes);
   app.use("/api/strategies", marketplaceRoutes);
   app.use("/api/leaderboard", leaderboardRoutes);
+  app.use("/api/tournaments", tournamentRoutes);
   app.use("/api", calendarRoutes);
   app.use("/api", exportRoutes);
   app.use("/api", openapiRoutes);
@@ -215,6 +220,11 @@ async function startServer() {
   // Init external services
   initS3().catch((err) => logger.warn({ err: err.message }, "S3 init failed"));
   ensureIndexes().then(() => reindexAllStrategies().catch(() => {})).catch(() => {});
+  // Start workers + crons
+  startBacktestWorker().catch((err) => logger.error({ err: err.message }, "backtest worker failed"));
+  startDailyDigestCron();
+  startTournamentCron();
+  ensureDemoTournament().catch((err) => logger.warn({ err: err.message }, "demo tournament failed"));
 
   // CSP report collector
   app.post("/api/csp-report", (req, res) => {

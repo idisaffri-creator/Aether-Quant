@@ -72,6 +72,9 @@ export default function Backtest() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [explanation, setExplanation] = useState<string | null>(null);
   const [explaining, setExplaining] = useState(false);
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [jobProgress, setJobProgress] = useState(0);
+  const [jobState, setJobState] = useState<string>("");
 
   const { startDate, endDate } = useMemo(() => {
     const end = new Date();

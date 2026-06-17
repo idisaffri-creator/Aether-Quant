@@ -316,9 +316,16 @@ export const api = {
   },
   backtest: {
     run: (data: { strategy: string; symbol: string; startDate: string; endDate: string; initialBalance: number; params?: any }) =>
-      request<{ id: string; status: string; result: any }>("/backtest/run", { method: "POST", body: JSON.stringify(data) }),
+      request<{ jobId: string; status: string }>("/backtest/run", { method: "POST", body: JSON.stringify(data) }),
+    getJob: (jobId: string) => request<{ state: string; progress: number; result?: any; error?: string }>(`/backtest/job/${jobId}`),
     get: (id: string) => request<any>(`/backtest/${id}`),
     list: (limit = 20) => request<{ backtests: any[] }>(`/backtest?limit=${limit}`),
+  },
+  tournaments: {
+    list: () => request<{ tournaments: any[] }>("/tournaments"),
+    get: (id: string) => request<{ tournament: any; leaderboard: any[] }>(`/tournaments/${id}`),
+    join: (id: string) => request<{ id: string; message: string }>(`/tournaments/${id}/join`, { method: "POST" }),
+    leave: (id: string) => request<{ message: string }>(`/tournaments/${id}/leave`, { method: "DELETE" }),
   },
   strategies: {
     listCustom: () => request<{ strategies: any[] }>("/strategies/custom"),

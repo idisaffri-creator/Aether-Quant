@@ -168,6 +168,38 @@ export async function runMigrations(): Promise<void> {
     )`;
     await client`CREATE INDEX IF NOT EXISTS consent_user_idx ON consent_log (user_id, accepted_at DESC)`;
 
+    // Tournaments
+    await client`CREATE TABLE IF NOT EXISTS tournaments (
+      id text PRIMARY KEY,
+      name text NOT NULL,
+      description text,
+      starting_balance numeric(20,2) NOT NULL DEFAULT 100000,
+      starts_at timestamp NOT NULL,
+      ends_at timestamp NOT NULL,
+      status text NOT NULL DEFAULT 'upcoming' CHECK (status IN ('upcoming','active','completed')),
+      max_participants integer NOT NULL DEFAULT 100,
+      prize_pool text,
+      created_at timestamp NOT NULL DEFAULT now()
+    )`;
+    await client`CREATE INDEX IF NOT EXISTS tournaments_status_idx ON tournaments (status, starts_at DESC)`;
+
+    // Tournament entries
+    await client`CREATE TABLE IF NOT EXISTS tournament_entries (
+      id text PRIMARY KEY,
+      tournament_id text NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
+      user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      starting_balance numeric(20,2) NOT NULL,
+      current_equity numeric(20,2) NOT NULL,
+      total_pnl numeric(20,2) NOT NULL DEFAULT 0,
+      total_pnl_pct numeric(20,8) NOT NULL DEFAULT 0,
+      trades integer NOT NULL DEFAULT 0,
+      rank integer,
+      joined_at timestamp NOT NULL DEFAULT now(),
+      last_updated timestamp NOT NULL DEFAULT now()
+    )`;
+    await client`CREATE UNIQUE INDEX IF NOT EXISTS tournament_user_uq ON tournament_entries (tournament_id, user_id)`;
+    await client`CREATE INDEX IF NOT EXISTS tournament_leaderboard_idx ON tournament_entries (tournament_id, total_pnl_pct DESC)`;
+
     // Backtests
     await client`CREATE TABLE IF NOT EXISTS backtests (
       id text PRIMARY KEY,

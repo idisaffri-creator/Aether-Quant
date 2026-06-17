@@ -1,14 +1,17 @@
 /**
  * Backtest API routes.
- *
- * POST /api/backtest/run  — start a backtest (returns immediately with id)
- * GET  /api/backtest/:id  — get a backtest result (poll for completion)
- * GET  /api/backtest      — list user's recent backtests
+ * POST /api/backtest/run       - enqueue job (returns jobId immediately)
+ * GET  /api/backtest/job/:id    - poll job status + result
+ * GET  /api/backtest/:id        - get persisted backtest result
+ * GET  /api/backtest            - list user's backtests
  */
 import { Router } from "express";
 import { z } from "zod";
 import { authMiddleware } from "../middleware/auth";
-import { runBacktest, getBacktest, listBacktests } from "../services/trading/backtest";
+import { getBacktest, listBacktests } from "../services/trading/backtest";
+import { enqueueBacktest, getBacktestJob } from "../services/queue/backtestQueue";
+import { db, schema } from "../db";
+import { eq, and, desc } from "drizzle-orm";
 import { logger } from "../lib/logger";
 
 const router = Router();
@@ -28,6 +31,10 @@ const runSchema = z.object({
   }).optional(),
 });
 
+/**
+ * Enqueue a backtest. Returns immediately with { jobId, status: "queued" }.
+ * UI polls /api/backtest/job/:id for status + result.
+ */
 router.post("/run", authMiddleware, async (req, res) => {
   try {
     const parsed = runSchema.safeParse(req.body);
@@ -44,12 +51,41 @@ router.post("/run", authMiddleware, async (req, res) => {
       res.status(400).json({ code: "VALIDATION", message: "Backtest period cannot exceed 2 years", status: 400 });
       return;
     }
-    const { id, result } = await runBacktest(req.user!.userId, parsed.data);
-    res.status(201).json({ id, status: "completed", result });
+    const jobId = await enqueueBacktest({ userId: req.user!.userId, input: parsed.data });
+    res.status(202).json({ jobId, status: "queued" });
   } catch (err) {
-    logger.error({ err: (err as Error).message }, "backtest run failed");
-    res.status(500).json({ code: "INTERNAL", message: "Backtest failed", status: 500 });
+    logger.error({ err: (err as Error).message }, "backtest enqueue failed");
+    res.status(500).json({ code: "INTERNAL", message: "Backtest enqueue failed" });
   }
+});
+
+/**
+ * Poll a backtest job for status + result.
+ */
+router.get("/job/:id", authMiddleware, async (req, res) => {
+  try {
+    const job = await getBacktestJob(req.params.id);
+    if (!job) {
+      res.status(404).json({ code: "NOT_FOUND", message: "Job not found or expired" });
+      return;
+    }
+    res.json(job);
+  } catch (err) {
+    logger.error({ err: (err as Error).message }, "job status failed");
+    res.status(500).json({ code: "INTERNAL", message: "Job status failed" });
+  }
+});
+
+/**
+ * Get a persisted backtest result (by backtest id, not job id).
+ */
+router.get("/:id", authMiddleware, async (req, res) => {
+  const bt = await getBacktest(req.user!.userId, req.params.id);
+  if (!bt) {
+    res.status(404).json({ code: "NOT_FOUND", message: "Backtest not found", status: 404 });
+    return;
+  }
+  res.json(bt);
 });
 
 router.get("/", authMiddleware, async (req, res) => {
@@ -58,17 +94,8 @@ router.get("/", authMiddleware, async (req, res) => {
     const list = await listBacktests(req.user!.userId, limit);
     res.json({ backtests: list });
   } catch (err) {
-    res.status(500).json({ code: "INTERNAL", message: "Failed to list backtests", status: 500 });
+    res.status(500).json({ code: "INTERNAL", message: "Failed to list backtests" });
   }
-});
-
-router.get("/:id", authMiddleware, async (req, res) => {
-  const bt = await getBacktest(req.user!.userId, req.params.id);
-  if (!bt) {
-    res.status(404).json({ code: "NOT_FOUND", message: "Backtest not found", status: 404 });
-    return;
-  }
-  res.json(bt);
 });
 
 export default router;

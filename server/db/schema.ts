@@ -203,6 +203,33 @@ export const consentLog = pgTable("consent_log", {
   acceptedAt: timestamp("accepted_at").defaultNow().notNull(),
 });
 
+export const tournaments = pgTable("tournaments", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  startingBalance: decimal("starting_balance", { precision: 20, scale: 2 }).notNull().default("100000"),
+  startsAt: timestamp("starts_at").notNull(),
+  endsAt: timestamp("ends_at").notNull(),
+  status: text("status", { enum: ["upcoming", "active", "completed"] }).notNull().default("upcoming"),
+  maxParticipants: integer("max_participants").notNull().default(100),
+  prizePool: text("prize_pool"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const tournamentEntries = pgTable("tournament_entries", {
+  id: text("id").primaryKey(),
+  tournamentId: text("tournament_id").notNull().references(() => tournaments.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  startingBalance: decimal("starting_balance", { precision: 20, scale: 2 }).notNull(),
+  currentEquity: decimal("current_equity", { precision: 20, scale: 2 }).notNull(),
+  totalPnl: decimal("total_pnl", { precision: 20, scale: 2 }).notNull().default("0"),
+  totalPnlPct: decimal("total_pnl_pct", { precision: 20, scale: 8 }).notNull().default("0"),
+  trades: integer("trades").notNull().default(0),
+  rank: integer("rank"),
+  joinedAt: timestamp("joined_at").defaultNow().notNull(),
+  lastUpdated: timestamp("last_updated").defaultNow().notNull(),
+});
+
 export const backtests = pgTable("backtests", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),

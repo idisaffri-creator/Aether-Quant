@@ -18,6 +18,7 @@ import Notifications from "./pages/Dashboard/Notifications";
 import Kyc from "./pages/Dashboard/Kyc";
 import Marketplace from "./pages/Dashboard/Marketplace";
 import Leaderboard from "./pages/Dashboard/Leaderboard";
+import Tournaments from "./pages/Dashboard/Tournaments";
 import Optimization from "./pages/Optimization";
 import AgentWorkforce from "./pages/AgentWorkforce";
 import OutcomeBilling from "./pages/OutcomeBilling";
@@ -94,6 +95,7 @@ function Router() {
                 <Route path="/dashboard/kyc" component={Kyc} />
                 <Route path="/dashboard/marketplace" component={Marketplace} />
                 <Route path="/dashboard/leaderboard" component={Leaderboard} />
+                <Route path="/dashboard/tournaments" component={Tournaments} />
                 <Route path="/dashboard/admin-mail" component={AdminMail} />
                 <Route path="/dashboard/404" component={NotFound} />
                 <Route component={NotFound} />

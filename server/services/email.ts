@@ -103,7 +103,7 @@ export const templates = {
     subject: `KYC ${data.status === "approved" ? "approved ✓" : "needs attention"}`,
     text: data.status === "approved"
       ? "Your identity verification has been approved. You can now switch to live trading.\n\nVisit: https://aether-energy.ai/dashboard/settings"
-      : `Your KYC submission needs attention: ${data.reason || "Please review and resubmit."}\n\nVisit: https://aether-energy.ai/dashboard/kyc`,
+      : `Your KYC submission status: ${data.status}\n\nVisit: https://aether-energy.ai/dashboard/kyc`,
   }),
 
   passwordReset: (data: { resetUrl: string }): EmailMessage => ({
@@ -116,6 +116,24 @@ export const templates = {
     to: "",
     subject: "Security alert: new activity on your account",
     text: `${data.event}\n\nIP: ${data.ip}${data.location ? `\nLocation: ${data.location}` : ""}\n\nIf this wasn't you, change your password immediately: https://aether-energy.ai/dashboard/settings`,
+  }),
+
+  dailyDigest: (data: { username: string; equity: string; realizedPnl: string; tradeCount: number; positions: number }): EmailMessage => ({
+    to: "",
+    subject: `Aether Energy · Daily summary for ${data.username}`,
+    text: `Good evening ${data.username},
+
+Here's your trading summary for today:
+
+Equity: $${data.equity}
+Realized P&L today: $${data.realizedPnl}
+Open positions: ${data.positions}
+Trades today: ${data.tradeCount}
+
+${data.tradeCount > 0 ? "View your trading activity: https://aether-energy.ai/dashboard/trading" : "Browse strategies to get started: https://aether-energy.ai/dashboard/marketplace"}
+
+— Aether Energy
+  `,
   }),
 };
 
