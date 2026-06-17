@@ -177,6 +177,7 @@ const paths: Record<string, any> = {
   "/api/trading/strategies/{id}/start": { post: { summary: "Start auto-trading a strategy", tags: ["Trading"], parameters: [pathParam("id", "Strategy ID")], responses: { "200": { description: "running" } } } },
   "/api/trading/strategies/{id}/stop": { post: { summary: "Stop auto-trading a strategy", tags: ["Trading"], parameters: [pathParam("id", "Strategy ID")], responses: { "200": { description: "stopped" }, "404": { description: "no running instance" } } } },
   "/api/trading/strategies/runs": { get: { summary: "List your strategy runs (P&L, trade count)", tags: ["Trading"], responses: { "200": { description: "runs" } } } },
+  "/api/trading/mode": { post: { summary: "Switch paper/live trading mode (live requires KYC + Alpaca)", tags: ["Trading"], requestBody: { content: { "application/json": { schema: { type: "object", properties: { mode: { type: "string", enum: ["paper", "live"] } }, required: ["mode"] } } } }, responses: { "200": { description: "switched" }, "400": { description: "live requires KYC + Alpaca" } } } },
 
   "/api/admin/users": { get: { summary: "List all users (admin only)", tags: ["Admin"], responses: { "200": { description: "users" } } } },
   "/api/admin/users/stats": { get: { summary: "User counts by tier (admin only)", tags: ["Admin"], responses: { "200": { description: "counts" } } } },
