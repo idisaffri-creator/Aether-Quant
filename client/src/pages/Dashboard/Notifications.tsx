@@ -44,12 +44,21 @@ export default function Notifications() {
   async function load() {
     setLoading(true);
     try {
-      const [r1, r2] = await Promise.all([
+      const [r1] = await Promise.all([
         api.notifications.list(100),
         api.notifications.unreadCount(),
       ]);
-      setItems(r1.notifications || []);
-      setUnread(r2.count || 0);
+      const list = r1.notifications || [];
+      setItems(list.map(n => ({
+        id: n.id,
+        kind: n.type,
+        title: n.title,
+        body: n.message,
+        meta: n.metadata,
+        read: n.read,
+        createdAt: n.createdAt,
+      })));
+      setUnread(list.filter(n => !n.read).length);
     } catch (err) {
       toast.error("Failed to load notifications");
     } finally {

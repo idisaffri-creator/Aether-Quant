@@ -7,7 +7,6 @@
  * DELETE /api/notifications/:id      - delete a notification
  */
 import { Router } from "express";
-import { z } from "zod";
 import { authMiddleware } from "../middleware/auth";
 import { db, schema } from "../db";
 import { eq, and, desc, sql } from "drizzle-orm";
@@ -26,15 +25,17 @@ router.get("/", authMiddleware, async (req, res) => {
     res.json({
       notifications: rows.map(n => ({
         id: n.id,
-        kind: n.kind,
+        type: n.type,
         title: n.title,
-        body: n.body,
-        meta: n.meta ? JSON.parse(n.meta) : null,
+        message: n.message,
+        metadata: n.metadata ? JSON.parse(n.metadata) : null,
         read: n.read === "true",
         createdAt: n.createdAt,
       })),
+      unreadCount: rows.filter(n => n.read === "false").length,
     });
   } catch (err) {
+    logger.error({ err: (err as Error).message }, "list notifications failed");
     res.status(500).json({ code: "INTERNAL", message: "Failed to fetch notifications" });
   }
 });

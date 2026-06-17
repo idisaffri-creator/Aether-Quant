@@ -42,13 +42,20 @@ export async function notify(userId: string, opts: NotifyOptions): Promise<{ ema
   try {
     // Persist to DB (in-app history)
     try {
+      const typeMap: Record<string, "trade" | "signal" | "alert" | "system" | "position"> = {
+        trade_fill: "trade",
+        kyc_status: "system",
+        signal_alert: "signal",
+        security_alert: "alert",
+        system: "system",
+      };
       await db.insert(schema.notifications).values({
         id: nanoid(),
         userId,
-        kind: opts.type,
+        type: typeMap[opts.type] || "system",
         title: opts.title,
-        body: opts.body,
-        meta: opts.meta ? JSON.stringify(opts.meta) : null,
+        message: opts.body,
+        metadata: opts.meta ? JSON.stringify(opts.meta) : null,
         read: "false",
       }).execute();
       result.persisted = true;
