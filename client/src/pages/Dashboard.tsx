@@ -134,21 +134,21 @@ export default function Dashboard() {
         <MetricCard
           label="Total P&L"
           value={`${isPositive ? "+" : ""}$${portfolio.totalPnl.toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
-          sub={`${isPositive ? "+" : ""}${(totalReturnPct * 100).toFixed(2)}% return`}
+          sub={`${isPositive ? "+" : ""}${(Number(totalReturnPct || 0) * 100).toFixed(2)}% return`}
           icon={isPositive ? TrendingUp : TrendingDown}
           positive={isPositive}
         />
         <MetricCard
           label="Sharpe"
-          value={portfolio.metrics.sharpeRatio.toFixed(2)}
-          sub={`Sortino ${portfolio.metrics.sortinoRatio.toFixed(2)}`}
+          value={Number(portfolio.metrics?.sharpeRatio || 0).toFixed(2)}
+          sub={`Sortino ${Number(portfolio.metrics?.sortinoRatio || 0).toFixed(2)}`}
           icon={Activity}
           positive={portfolio.metrics.sharpeRatio > 0}
         />
         <MetricCard
           label="Exposure"
           value={`$${portfolio.exposure.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
-          sub={`${(portfolio.exposurePct * 100).toFixed(1)}% of equity`}
+          sub={`${(Number(portfolio.exposurePct || 0) * 100).toFixed(1)}% of equity`}
           icon={Target}
           positive={false}
         />
@@ -189,16 +189,16 @@ export default function Dashboard() {
             <Shield className="w-3.5 h-3.5" /> Risk & Performance
           </h3>
           <div className="grid grid-cols-2 gap-3">
-            <Stat label="Max DD" value={`${(portfolio.metrics.maxDrawdownPct * 100).toFixed(2)}%`} sub={`$${Math.abs(portfolio.metrics.maxDrawdown).toFixed(0)}`} negative />
-            <Stat label="Win Rate" value={`${(portfolio.metrics.winRate * 100).toFixed(1)}%`} positive={portfolio.metrics.winRate > 0.5} />
-            <Stat label="Trades" value={String(portfolio.totalTrades)} />
-            <Stat label="Realized" value={`${portfolio.realizedPnl >= 0 ? "+" : ""}$${portfolio.realizedPnl.toFixed(2)}`} positive={portfolio.realizedPnl >= 0} />
+            <Stat label="Max DD" value={`${(Number(portfolio.metrics?.maxDrawdownPct || 0) * 100).toFixed(2)}%`} sub={`$${Math.abs(Number(portfolio.metrics?.maxDrawdown || 0)).toFixed(0)}`} negative />
+            <Stat label="Win Rate" value={`${(Number(portfolio.metrics?.winRate || 0) * 100).toFixed(1)}%`} positive={Number(portfolio.metrics?.winRate || 0) > 0.5} />
+            <Stat label="Trades" value={String(portfolio.totalTrades ?? 0)} />
+            <Stat label="Realized" value={`${Number(portfolio.realizedPnl || 0) >= 0 ? "+" : ""}$${Number(portfolio.realizedPnl || 0).toFixed(2)}`} positive={Number(portfolio.realizedPnl || 0) >= 0} />
           </div>
-          {portfolio.metrics.bestTrade && (
+          {portfolio.metrics?.bestTrade && (
             <div className="mt-3 pt-3 border-t border-border/50 text-xs text-muted-foreground">
-              <div>Best: <span className="text-emerald-400 font-mono">+${portfolio.metrics.bestTrade.pnl.toFixed(2)}</span> ({portfolio.metrics.bestTrade.symbol})</div>
+              <div>Best: <span className="text-emerald-400 font-mono">+${Number(portfolio.metrics.bestTrade.pnl || 0).toFixed(2)}</span> ({portfolio.metrics.bestTrade.symbol})</div>
               {portfolio.metrics.worstTrade && (
-                <div>Worst: <span className="text-red-400 font-mono">${portfolio.metrics.worstTrade.pnl.toFixed(2)}</span> ({portfolio.metrics.worstTrade.symbol})</div>
+                <div>Worst: <span className="text-red-400 font-mono">${Number(portfolio.metrics.worstTrade.pnl || 0).toFixed(2)}</span> ({portfolio.metrics.worstTrade.symbol})</div>
               )}
             </div>
           )}
@@ -229,8 +229,8 @@ export default function Dashboard() {
                   <div className="w-2 h-2 rounded-full" style={{ backgroundColor: a.color }} />
                   <span className="text-muted-foreground">{a.name}</span>
                 </div>
-                <span className={`font-mono font-semibold ${a.pnl >= 0 ? "text-emerald-400" : "text-red-400"}`}>
-                  {a.pnl >= 0 ? "+" : ""}${a.pnl.toFixed(2)}
+                <span className={`font-mono font-semibold ${Number(a.pnl || 0) >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                  {Number(a.pnl || 0) >= 0 ? "+" : ""}${Number(a.pnl || 0).toFixed(2)}
                 </span>
               </div>
             )) : <div className="text-xs text-muted-foreground">Start trading to see allocation</div>}

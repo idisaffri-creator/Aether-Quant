@@ -106,7 +106,7 @@ export const api = {
     updatePreferences: (data: UserPreferences) =>
       request<{ preferences: UserPreferences }>("/auth/preferences", { method: "PUT", body: JSON.stringify(data) }),
     getSession: () =>
-      request<{ userId: string; email: string; issuedAt: string; expiresAt: string; ip: string; browser: string; os: string; device: string }>("/auth/session"),
+      request<{ sessionId: string | null; userId: string; email: string; issuedAt: string | null; expiresAt: string | null; remainingMs: number; ip: string; userAgent: string; browser: string; os: string; device: string }>("/auth/session"),
     completeOnboarding: () =>
       request<{ preferences: UserPreferences & { onboardingCompleted?: boolean } }>("/auth/onboarding/complete", { method: "POST" }),
     exportData: () => request<{ exportedAt: string; user: any; consentLog: any[]; orders: any[]; positions: any[]; strategyRuns: any[]; kycSubmissions: any[]; backtests: any[]; auditLog: any[] }>("/auth/me/export"),

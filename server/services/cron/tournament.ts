@@ -5,7 +5,7 @@
 import cron from "node-cron";
 import { db, schema } from "../../db";
 import { logger } from "../../lib/logger";
-import { recalculateTournament, ensureDemoTournament } from "../../routes/tournaments";
+import { recalculateTournament, ensureDemoTournament, createMonthlyTournament } from "../../routes/tournaments";
 
 export function startTournamentCron() {
   // Recalculate all active tournaments every 5 minutes
@@ -20,5 +20,15 @@ export function startTournamentCron() {
       logger.error({ err: (err as Error).message }, "tournament cron failed");
     }
   });
-  logger.info("tournament cron scheduled (every 5 min)");
+
+  // On the 1st of each month at 00:05 UTC, create a new monthly tournament
+  cron.schedule("5 0 1 * *", async () => {
+    try {
+      await createMonthlyTournament();
+    } catch (err) {
+      logger.error({ err: (err as Error).message }, "monthly tournament creation failed");
+    }
+  });
+
+  logger.info("tournament cron scheduled (5min recalc + monthly auto-create)");
 }

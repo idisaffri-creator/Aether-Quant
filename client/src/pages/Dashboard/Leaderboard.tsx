@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { Trophy, Medal, Award, Crown, TrendingUp, TrendingDown, Loader2, Target, Activity } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
+import { num, signedMoney, money } from "@/lib/format";
 
 const RANK_ICONS = [Crown, Trophy, Medal, Award];
 
@@ -54,10 +55,10 @@ export default function Leaderboard() {
               #{me.rank || "—"}
             </div>
             <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <Stat label="Total P&L" value={`$${me.totalPnl.toFixed(2)}`} positive={me.totalPnl >= 0} />
-              <Stat label="Trades" value={String(me.totalTrades)} />
-              <Stat label="Positions" value={String(me.totalPositions)} />
-              <Stat label="Exposure" value={`$${me.exposure.toFixed(0)}`} />
+              <Stat label="Total P&L" value={signedMoney(me.totalPnl)} positive={num(me.totalPnl) >= 0} />
+              <Stat label="Trades" value={String(num(me.totalTrades))} />
+              <Stat label="Positions" value={String(num(me.totalPositions))} />
+              <Stat label="Exposure" value={money(me.exposure, 0)} />
             </div>
           </div>
         </motion.div>
@@ -99,10 +100,10 @@ export default function Leaderboard() {
                     <div className="text-xs text-muted-foreground">{e.totalTrades} trades · {e.totalPositions} positions</div>
                   </div>
                   <div className="text-right">
-                    <div className={`font-mono font-semibold ${e.totalPnl >= 0 ? "text-emerald-400" : "text-red-400"}`}>
-                      {e.totalPnl >= 0 ? "+" : ""}${e.totalPnl.toFixed(2)}
+                    <div className={`font-mono font-semibold ${num(e.totalPnl) >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                      {signedMoney(e.totalPnl)}
                     </div>
-                    <div className="text-[10px] text-muted-foreground">${e.exposure.toFixed(0)} exposure</div>
+                    <div className="text-[10px] text-muted-foreground">{money(e.exposure, 0)} exposure</div>
                   </div>
                 </motion.div>
               );

@@ -27,8 +27,10 @@ function simulatePriceUpdate(tickers: TickerItem[]): TickerItem[] {
     const volatility = t.symbol === "NG" ? 0.008 : t.symbol === "GC" ? 0.001 : 0.003;
     const delta = (Math.random() - 0.48) * t.price * volatility;
     const newPrice = +(t.price + delta).toFixed(2);
-    const newChange = +(newPrice - (t.price - t.change)).toFixed(2);
-    const newPct = +((newChange / (newPrice - newChange)) * 100).toFixed(2);
+    const prevRef = t.price - t.change;
+    const newChange = +(newPrice - prevRef).toFixed(2);
+    const basePrice = newPrice - newChange;
+    const newPct = basePrice > 0 ? +((newChange / basePrice) * 100).toFixed(2) : 0;
     return { ...t, price: newPrice, change: newChange, pctChange: newPct };
   });
 }

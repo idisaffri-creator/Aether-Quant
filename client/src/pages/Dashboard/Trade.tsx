@@ -258,7 +258,7 @@ export default function Trade() {
                 type="number"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
-                placeholder={quote?.price.toFixed(2)}
+                placeholder={quote?.price ? `$${quote.price.toFixed(2)}` : "$0.00"}
                 className="w-full mt-1 px-3 py-2 rounded-lg bg-accent/50 border border-border text-sm font-mono focus:outline-none focus:border-amber/50"
               />
             </div>

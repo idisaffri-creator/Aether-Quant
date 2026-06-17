@@ -236,26 +236,39 @@ export async function ensureDemoTournament() {
   try {
     const existing = await db.select().from(schema.tournaments).execute();
     if (existing.length > 0) return;
-    const now = new Date();
-    const startsAt = new Date(now);
-    startsAt.setHours(0, 0, 0, 0);
-    const endsAt = new Date(startsAt);
-    endsAt.setDate(endsAt.getDate() + 30);
-    await db.insert(schema.tournaments).values({
-      id: nanoid(),
-      name: "Q3 2026 Energy Trading Cup",
-      description: "30-day paper trading competition. Top 10 by P&L win bragging rights + a featured spot on the leaderboard. Trade crude oil, natural gas, gold, and silver with $100k virtual capital.",
-      startingBalance: "100000",
-      startsAt,
-      endsAt,
-      status: "active",
-      maxParticipants: 200,
-      prizePool: "Featured on leaderboard · Custom strategy showcase",
-    }).execute();
+    await createMonthlyTournament("Q3 2026 Energy Trading Cup", 30);
     logger.info("demo tournament created (Q3 2026 Energy Trading Cup)");
   } catch (err) {
     logger.error({ err: (err as Error).message }, "demo tournament creation failed");
   }
+}
+
+/**
+ * Auto-create a new monthly tournament.
+ * Called by cron on the 1st of each month, or manually for testing.
+ */
+export async function createMonthlyTournament(name?: string, days = 30) {
+  const now = new Date();
+  const monthName = now.toLocaleString("en-US", { month: "long", year: "numeric" });
+  const startsAt = new Date(now);
+  startsAt.setHours(0, 0, 0, 0);
+  const endsAt = new Date(startsAt);
+  endsAt.setDate(endsAt.getDate() + days);
+  const id = nanoid();
+  const tname = name || `${monthName} Energy Trading Cup`;
+  await db.insert(schema.tournaments).values({
+    id,
+    name: tname,
+    description: `${days}-day paper trading competition. Top 10 by P&L win bragging rights + featured leaderboard spot. Trade crude oil, natural gas, gold, and silver with $100k virtual capital.`,
+    startingBalance: "100000",
+    startsAt,
+    endsAt,
+    status: "active",
+    maxParticipants: 200,
+    prizePool: "Featured on leaderboard · Custom strategy showcase",
+  }).execute();
+  logger.info({ id, name: tname, days }, "tournament created");
+  return id;
 }
 
 export default router;

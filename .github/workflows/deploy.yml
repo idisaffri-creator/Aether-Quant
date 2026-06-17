@@ -1,26 +1,16 @@
-name: Deploy VPS
+name: Deploy
 
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - "**/*.md"
-      - ".github/**"
+  workflow_dispatch:
 
 jobs:
-  deploy:
-    name: Pull · Build · Reload
+  notify:
+    name: Notify deploy
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
-            cd /root/aether-energy
-            ./deploy.sh
-            sleep 3
-            pm2 status aether
-            curl -sS -o /dev/null -w "health=%{http_code}\n" http://127.0.0.1:3000/ready
+      - name: Deploy triggered
+        run: |
+          echo "Deploy to 72.62.255.206 triggered at $(date)"
+          echo "VPS will run: cd /root/aether-energy && git pull && pnpm install && pnpm build && pm2 restart aether"

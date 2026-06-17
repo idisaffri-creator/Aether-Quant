@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { TrendingUp, TrendingDown, Activity, Radio, Zap, Database, ArrowUpRight } from "lucide-react";
 import { Link } from "wouter";
+import { num, signedMoney } from "@/lib/format";
 
 interface Feed {
   name: string;
@@ -125,8 +126,8 @@ export default function LiveDataSection() {
                       </div>
                       <span className="text-foreground/90">{e.username || "trader"}</span>
                     </div>
-                    <span className={`text-xs font-mono font-semibold ${(e.totalPnl || 0) >= 0 ? "text-emerald-400" : "text-red-400"}`}>
-                      {e.totalPnl >= 0 ? "+" : ""}${e.totalPnl.toFixed(2)}
+                    <span className={`text-xs font-mono font-semibold ${num(e.totalPnl) >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                      {signedMoney(e.totalPnl)}
                     </span>
                   </div>
                 ))}
