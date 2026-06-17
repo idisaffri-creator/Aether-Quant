@@ -13,6 +13,7 @@ import { eq, and, desc } from "drizzle-orm";
 import { logger } from "../../lib/logger";
 import { submitOrder as submitPaperOrder } from "./paperEngine";
 import { submitAlpacaOrder, getAlpacaConfig, isAlpacaConfigured } from "./alpaca";
+import { checkRisk, logRiskEvent } from "../risk/manager";
 
 export type TradingMode = "paper" | "live";
 
@@ -34,6 +35,14 @@ export async function routeOrder(userId: string, input: {
   stopPrice?: number;
   strategyId?: string;
 }): Promise<OrderRouteResult> {
+  // Risk check FIRST — before paper or live routing
+  const price = input.limitPrice || input.stopPrice || 100; // fallback if market
+  const riskResult = await checkRisk({ userId, symbol: input.symbol, side: input.side, quantity: input.quantity, price });
+  await logRiskEvent(userId, null, riskResult);
+  if (!riskResult.ok) {
+    return { mode: "paper", order: null, message: riskResult.reason || "Risk check failed" };
+  }
+
   // Check user config
   const userRows = await db.select().from(schema.users).where(eq(schema.users.id, userId)).execute();
   const user = userRows[0] as any;
