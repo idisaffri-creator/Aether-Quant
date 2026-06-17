@@ -59,6 +59,12 @@ import notificationRoutes from "./routes/notifications";
 import marketplaceRoutes from "./routes/marketplace";
 import leaderboardRoutes from "./routes/leaderboard";
 import tournamentRoutes, { ensureDemoTournament } from "./routes/tournaments";
+import journalRoutes from "./routes/journal";
+import priceAlertRoutes from "./routes/priceAlerts";
+import apiKeyRoutes from "./routes/apiKeys";
+import apiV1Routes from "./routes/apiV1";
+import ogRoutes from "./routes/og";
+import { startPriceAlertCron } from "./services/cron/priceAlerts";
 import { startBacktestWorker } from "./services/queue/backtestQueue";
 import { startDailyDigestCron } from "./services/cron/dailyDigest";
 import { startTournamentCron } from "./services/cron/tournament";
@@ -213,6 +219,11 @@ async function startServer() {
   app.use("/api/strategies", marketplaceRoutes);
   app.use("/api/leaderboard", leaderboardRoutes);
   app.use("/api/tournaments", tournamentRoutes);
+  app.use("/api/journal", journalRoutes);
+  app.use("/api/alerts", priceAlertRoutes);
+  app.use("/api/keys", apiKeyRoutes);
+  app.use("/api/v1", apiV1Routes);
+  app.use("/og", ogRoutes);
   app.use("/api", calendarRoutes);
   app.use("/api", exportRoutes);
   app.use("/api", openapiRoutes);
@@ -224,6 +235,7 @@ async function startServer() {
   startBacktestWorker().catch((err) => logger.error({ err: err.message }, "backtest worker failed"));
   startDailyDigestCron();
   startTournamentCron();
+  startPriceAlertCron();
   ensureDemoTournament().catch((err) => logger.warn({ err: err.message }, "demo tournament failed"));
 
   // CSP report collector

@@ -6,6 +6,7 @@ import { useAtomValue } from "jotai";
 import { isAuthenticatedAtom } from "@/store/auth";
 import { motion, AnimatePresence } from "framer-motion";
 import { QuickStats } from "./QuickStats";
+import { LanguagePicker } from "./LanguagePicker";
 
 const navLinks = [
   { label: "Terminal", href: "#terminal" },
@@ -81,6 +82,7 @@ export default function Navbar() {
             animate={{ opacity: 1, x: 0 }}
             className="hidden lg:flex items-center gap-3"
           >
+            <LanguagePicker />
             {isAuthenticated && <QuickStats />}
             {isAuthenticated ? (
               <button

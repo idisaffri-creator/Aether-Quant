@@ -261,6 +261,58 @@ export async function runMigrations(): Promise<void> {
     await client`CREATE INDEX IF NOT EXISTS notifications_user_unread_idx ON notifications (user_id, read, created_at DESC)`;
     await client`CREATE INDEX IF NOT EXISTS notifications_user_created_idx ON notifications (user_id, created_at DESC)`;
 
+    // Trade journal
+    await client`CREATE TABLE IF NOT EXISTS trade_journal (
+      id text PRIMARY KEY,
+      user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      order_id text,
+      symbol text NOT NULL,
+      side text NOT NULL,
+      thesis text,
+      lessons text,
+      tags text[],
+      rating integer,
+      pnl_at_note numeric(18, 8),
+      created_at timestamp NOT NULL DEFAULT now(),
+      updated_at timestamp NOT NULL DEFAULT now()
+    )`;
+    await client`CREATE INDEX IF NOT EXISTS trade_journal_user_idx ON trade_journal (user_id, created_at DESC)`;
+    await client`CREATE INDEX IF NOT EXISTS trade_journal_symbol_idx ON trade_journal (user_id, symbol)`;
+
+    // Price alerts
+    await client`CREATE TABLE IF NOT EXISTS price_alerts (
+      id text PRIMARY KEY,
+      user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      symbol text NOT NULL,
+      condition text NOT NULL CHECK (condition IN ('above','below','crosses')),
+      threshold numeric(18, 8) NOT NULL,
+      current_price numeric(18, 8),
+      triggered_at timestamp,
+      active integer NOT NULL DEFAULT 1,
+      trigger_once integer NOT NULL DEFAULT 1,
+      notify_email integer NOT NULL DEFAULT 0,
+      notify_discord integer NOT NULL DEFAULT 0,
+      created_at timestamp NOT NULL DEFAULT now()
+    )`;
+    await client`CREATE INDEX IF NOT EXISTS price_alerts_active_idx ON price_alerts (active, symbol) WHERE active = 1`;
+    await client`CREATE INDEX IF NOT EXISTS price_alerts_user_idx ON price_alerts (user_id, created_at DESC)`;
+
+    // API keys (developer access)
+    await client`CREATE TABLE IF NOT EXISTS api_keys (
+      id text PRIMARY KEY,
+      user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      name text NOT NULL,
+      prefix text NOT NULL,
+      hash text NOT NULL,
+      scopes text[] NOT NULL DEFAULT '{}',
+      last_used_at timestamp,
+      expires_at timestamp,
+      revoked_at timestamp,
+      created_at timestamp NOT NULL DEFAULT now()
+    )`;
+    await client`CREATE INDEX IF NOT EXISTS api_keys_prefix_idx ON api_keys (prefix) WHERE revoked_at IS NULL`;
+    await client`CREATE INDEX IF NOT EXISTS api_keys_user_idx ON api_keys (user_id, created_at DESC)`;
+
     console.log("[db] Auto-migrations + indexes complete");
   } catch (err) {
     console.warn("[db] Auto-migrations skipped/failed (continuing):", (err as Error).message);

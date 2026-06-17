@@ -46,6 +46,9 @@ const AdminMail = lazy(() => import("./pages/Dashboard/AdminMail"));
 const PositionSizing = lazy(() => import("./pages/Dashboard/PositionSizing"));
 const Watchlist = lazy(() => import("./pages/Dashboard/Watchlist"));
 const AuditLog = lazy(() => import("./pages/Dashboard/AuditLog"));
+const TradeJournal = lazy(() => import("./pages/Dashboard/TradeJournal"));
+const PriceAlerts = lazy(() => import("./pages/Dashboard/PriceAlerts"));
+const ApiKeys = lazy(() => import("./pages/Dashboard/ApiKeys"));
 
 function DashboardLoader() {
   return (
@@ -102,6 +105,9 @@ function Router() {
                 <Route path="/dashboard/position-sizing" component={PositionSizing} />
                 <Route path="/dashboard/watchlist" component={Watchlist} />
                 <Route path="/dashboard/audit-log" component={AuditLog} />
+                <Route path="/dashboard/journal" component={TradeJournal} />
+                <Route path="/dashboard/alerts" component={PriceAlerts} />
+                <Route path="/dashboard/api-keys" component={ApiKeys} />
                 <Route path="/dashboard/admin-mail" component={AdminMail} />
                 <Route path="/dashboard/404" component={NotFound} />
                 <Route component={NotFound} />

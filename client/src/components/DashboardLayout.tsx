@@ -46,6 +46,8 @@ import {
   Star,
   ScrollText,
   Calculator,
+  BookOpen,
+  Key,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -97,6 +99,9 @@ const tradingNav = [
   { path: "/dashboard/tournaments", label: "Tournaments", icon: Award },
   { path: "/dashboard/watchlist", label: "Watchlist", icon: Star },
   { path: "/dashboard/position-sizing", label: "Position Sizing", icon: Calculator },
+  { path: "/dashboard/journal", label: "Trade Journal", icon: BookOpen },
+  { path: "/dashboard/alerts", label: "Price Alerts", icon: Bell },
+  { path: "/dashboard/api-keys", label: "API Keys", icon: Key },
   { path: "/dashboard/notifications", label: "Notifications", icon: Bell },
   { path: "/dashboard/kyc", label: "KYC Documents", icon: FileCheck },
   { path: "/dashboard/settings", label: "Settings", icon: SettingsIcon },
