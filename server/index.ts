@@ -51,6 +51,8 @@ import exportRoutes from "./routes/export";
 import riskRoutes from "./routes/risk";
 import calendarRoutes from "./routes/calendar";
 import portfolioRoutes from "./routes/portfolio";
+import aiRoutes from "./routes/ai";
+import comparisonRoutes from "./routes/comparison";
 import { setupWebSocket } from "./ws/index";
 import { runMigrations } from "./db";
 import { startIngest, stopIngest } from "./services/data/ingest";
@@ -192,6 +194,8 @@ async function startServer() {
   app.use("/api/strategies", strategyTemplateRoutes);
   app.use("/api/risk", riskRoutes);
   app.use("/api/portfolio", portfolioRoutes);
+  app.use("/api/ai", aiRoutes);
+  app.use("/api/comparison", comparisonRoutes);
   app.use("/api", calendarRoutes);
   app.use("/api", exportRoutes);
   app.use("/api", openapiRoutes);

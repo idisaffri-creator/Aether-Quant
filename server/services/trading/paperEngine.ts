@@ -19,6 +19,7 @@ import { nanoid } from "nanoid";
 import { z } from "zod";
 import { logger } from "../../lib/logger";
 import { broadcastToUser } from "../../ws/userBroadcaster";
+import { notify } from "../notify";
 import { getQuotes } from "../data/quoteCache";
 import type { MarketData } from "../../../shared/types";
 
@@ -256,6 +257,19 @@ export async function processTick(quotes: MarketData[]): Promise<void> {
         .where(eq(schema.orders.id, order.id))
         .execute();
       await applyFill(order.userId, { ...order, status: "filled", avgFillPrice: String(fill) }, fill);
+      // Notify (fire-and-forget — WS + email)
+      notify(order.userId, {
+        type: "trade_fill",
+        title: `Order filled: ${order.side.toUpperCase()} ${order.quantity} ${order.symbol}`,
+        body: `${order.side === "buy" ? "Bought" : "Sold"} ${order.quantity} ${order.symbol} @ $${fill.toFixed(2)}`,
+        emailData: {
+          symbol: order.symbol,
+          side: order.side,
+          quantity: Number(order.quantity),
+          price: fill,
+          orderType: order.type,
+        },
+      }).catch(() => { /* ignore notify errors */ });
     }
   }
 }

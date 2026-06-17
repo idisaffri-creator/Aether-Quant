@@ -13,6 +13,7 @@ import { db, schema } from "../../db";
 import { eq, and, desc } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { logger } from "../../lib/logger";
+import { notify } from "../notify";
 
 export interface KycInquiry {
   id: string;
@@ -132,6 +133,16 @@ export async function handleProviderWebhook(provider: string, payload: any): Pro
     .execute();
 
   logger.info({ provider, providerRef, newStatus }, "KYC webhook processed");
+
+  // Notify user
+  const userId = rows[0].userId;
+  notify(userId, {
+    type: "kyc_status",
+    title: newStatus === "approved" ? "KYC approved ✓" : "KYC needs attention",
+    body: newStatus === "approved" ? "Your identity verification has been approved. You can now switch to live trading." : `Your KYC submission status: ${newStatus}`,
+    emailData: { status: newStatus },
+  }).catch(() => { /* ignore notify errors */ });
+
   return { updated: true, status: newStatus };
 }
 

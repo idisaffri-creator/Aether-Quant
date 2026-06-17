@@ -13,6 +13,7 @@ import { authMiddleware } from "../middleware/auth";
 import { requireAdmin } from "../middleware/adminAuth";
 import { requireAdmin2FA } from "../middleware/requireAdmin2FA";
 import { logger } from "../lib/logger";
+import { notify } from "../services/notify";
 
 const router = Router();
 
@@ -63,6 +64,13 @@ router.post("/submit", authMiddleware, async (req, res) => {
       reviewedAt,
     }).execute();
     logger.info({ userId: req.user!.userId, status }, "KYC submitted");
+    // Notify user
+    notify(req.user!.userId, {
+      type: "kyc_status",
+      title: status === "approved" ? "KYC approved ✓" : "KYC submitted",
+      body: status === "approved" ? "Your identity verification has been approved. You can now switch to live trading." : "Your KYC submission is pending review.",
+      emailData: { status: status as "approved" | "rejected" | "pending" | "needs_info" },
+    }).catch(() => { /* ignore notify errors */ });
     res.json({ message: "KYC submitted", status, id });
   } catch (err) {
     logger.error({ err: (err as Error).message }, "KYC submit failed");

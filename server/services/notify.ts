@@ -15,9 +15,9 @@
  */
 import { logger } from "../lib/logger";
 import { sendEmail, templates, isEmailConfigured } from "./email";
-import { db, schema } from "../../db";
+import { db, schema } from "../db";
 import { eq } from "drizzle-orm";
-import { broadcastToUser } from "../../ws/userBroadcaster";
+import { broadcastToUser } from "../ws/userBroadcaster";
 
 export type NotificationType = "trade_fill" | "kyc_status" | "signal_alert" | "security_alert" | "system";
 

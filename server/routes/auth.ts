@@ -330,6 +330,12 @@ router.post("/forgot-password", async (req, res) => {
     });
     devToken = token;
     console.log(`[auth] Password reset requested for ${email}. Token: ${token}`);
+
+    // Send password reset email (if email provider configured)
+    const resetUrl = `${process.env.APP_URL || "https://aether-energy.ai"}/reset-password?token=${token}`;
+    const emailMsg = templates.passwordReset({ resetUrl });
+    emailMsg.to = email;
+    sendEmail(emailMsg).catch((err) => logger.warn({ err: err.message }, "reset email failed"));
   }
 
   res.json({
