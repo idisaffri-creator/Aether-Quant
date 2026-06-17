@@ -13,6 +13,7 @@ import { securityHeaders } from "./middleware/security";
 import { requestId } from "./middleware/requestId";
 import { requestLogger } from "./middleware/requestLogger";
 import { idempotency } from "./middleware/idempotency";
+import { requireAdmin2FA } from "./middleware/requireAdmin2FA";
 import { installShutdown, shutdownMiddleware } from "./lib/shutdown";
 import { logger } from "./lib/logger";
 import { initSentry, sentryRequestHandler, sentryTracingHandler, sentryErrorHandler, sentryClose } from "./lib/sentry";
@@ -37,6 +38,10 @@ import adminUsersRoutes from "./routes/adminUsers";
 import tradingRoutes from "./routes/trading";
 import openapiRoutes from "./routes/openapi";
 import statusRoutes from "./routes/status";
+import statusUIRoutes from "./routes/statusUI";
+import kycRoutes from "./routes/kyc";
+import legalRoutes from "./routes/legal";
+import alertRoutes from "./routes/alerts";
 import { setupWebSocket } from "./ws/index";
 import { runMigrations } from "./db";
 import { startIngest, stopIngest } from "./services/data/ingest";
@@ -146,10 +151,12 @@ async function startServer() {
   // ─── Existing audit logger + rate limit ──────────────────────────────
   app.use(auditLogger);
   app.use(rateLimit);
+  app.use(requireAdmin2FA);
 
   // ─── Routes ──────────────────────────────────────────────────────────
   app.use("/", healthRoutes);
   app.use("/status", statusRoutes);
+  app.use("/status", statusUIRoutes);
   app.use("/api/auth", authRoutes);
   app.use("/api/auth/2fa", auth2faRoutes);
   app.use("/api/auth/me", gdprRoutes); // /export, DELETE /
@@ -167,6 +174,9 @@ async function startServer() {
   app.use("/api/admin/mail", adminMailRoutes);
   app.use("/api/admin", adminUsersRoutes);
   app.use("/api/trading", tradingRoutes);
+  app.use("/api/kyc", kycRoutes);
+  app.use("/api/legal", legalRoutes);
+  app.use("/api/alerts", alertRoutes);
   app.use("/api", openapiRoutes);
 
   // CSP report collector

@@ -118,6 +118,41 @@ export async function runMigrations(): Promise<void> {
       last_error text
     )`;
 
+    // KYC submissions
+    await client`CREATE TABLE IF NOT EXISTS kyc_submissions (
+      id text PRIMARY KEY,
+      user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected','needs_info')),
+      legal_name text,
+      date_of_birth text,
+      country text,
+      address text,
+      id_document_type text,
+      id_document_number text,
+      id_document_country text,
+      tax_id_last4 text,
+      alpaca_account_id text,
+      risk_acknowledged text DEFAULT 'false',
+      review_notes text,
+      reviewed_by text,
+      submitted_at timestamp NOT NULL DEFAULT now(),
+      reviewed_at timestamp
+    )`;
+    await client`CREATE INDEX IF NOT EXISTS kyc_user_idx ON kyc_submissions (user_id, submitted_at DESC)`;
+    await client`CREATE INDEX IF NOT EXISTS kyc_status_idx ON kyc_submissions (status, submitted_at DESC)`;
+
+    // Consent log
+    await client`CREATE TABLE IF NOT EXISTS consent_log (
+      id text PRIMARY KEY,
+      user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      document_type text NOT NULL,
+      document_version text NOT NULL,
+      ip_address text,
+      user_agent text,
+      accepted_at timestamp NOT NULL DEFAULT now()
+    )`;
+    await client`CREATE INDEX IF NOT EXISTS consent_user_idx ON consent_log (user_id, accepted_at DESC)`;
+
     console.log("[db] Auto-migrations + indexes complete");
   } catch (err) {
     console.warn("[db] Auto-migrations skipped/failed (continuing):", (err as Error).message);

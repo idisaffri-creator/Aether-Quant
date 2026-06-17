@@ -172,3 +172,33 @@ export const strategyRuns = pgTable("strategy_runs", {
   tradeCount: integer("trade_count").default(0).notNull(),
   lastError: text("last_error"),
 });
+
+export const kycSubmissions = pgTable("kyc_submissions", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  status: text("status", { enum: ["pending", "approved", "rejected", "needs_info"] }).notNull().default("pending"),
+  legalName: text("legal_name"),
+  dateOfBirth: text("date_of_birth"),
+  country: text("country"),
+  address: text("address"),
+  idDocumentType: text("id_document_type"),
+  idDocumentNumber: text("id_document_number"),
+  idDocumentCountry: text("id_document_country"),
+  taxIdLast4: text("tax_id_last4"),
+  alpacaAccountId: text("alpaca_account_id"),
+  riskAcknowledged: text("risk_acknowledged").default("false"),
+  reviewNotes: text("review_notes"),
+  reviewedBy: text("reviewed_by"),
+  submittedAt: timestamp("submitted_at").defaultNow().notNull(),
+  reviewedAt: timestamp("reviewed_at"),
+});
+
+export const consentLog = pgTable("consent_log", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  documentType: text("document_type").notNull(),
+  documentVersion: text("document_version").notNull(),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  acceptedAt: timestamp("accepted_at").defaultNow().notNull(),
+});

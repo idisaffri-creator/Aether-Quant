@@ -18,7 +18,7 @@ import {
   CheckCircle2, AlertCircle, Loader2, Wifi, WifiOff,
 } from "lucide-react";
 import { toast } from "sonner";
-import type { UserPreferences } from "@shared/types";
+import CandleChart from "@/components/CandleChart";
 
 interface Position {
   id: string;
@@ -189,6 +189,10 @@ export default function Trading() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-3 glass-card rounded-xl p-5">
+          <CandleChart symbol={orderForm.symbol} resolution="1h" height={280} onRefresh={refreshAll} />
+        </div>
+
         {/* Order form */}
         <div className="glass-card rounded-xl p-5 lg:col-span-1 space-y-4">
           <h2 className="text-sm font-semibold">Submit Order</h2>
