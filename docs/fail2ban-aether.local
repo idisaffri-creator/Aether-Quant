@@ -1,0 +1,51 @@
+# Aether Energy — fail2ban jail for SSH + Aether API
+# Install: apt install fail2ban
+# Copy to: /etc/fail2ban/jail.d/aether-energy.local
+# Restart: systemctl restart fail2ban
+# Status: fail2ban-client status sshd
+
+[DEFAULT]
+# Ban hosts for 1 hour
+bantime = 1h
+# Find time window
+findtime = 10m
+# Max retry attempts
+maxretry = 5
+
+# Ignore our own IP
+ignoreip = 127.0.0.1/8 ::1
+
+# ─── SSH ────────────────────────────────────────────────────────────────────
+[sshd]
+enabled = true
+port = ssh
+filter = sshd
+logpath = /var/log/auth.log
+maxretry = 3
+bantime = 24h
+
+# ─── Traefik (reverse proxy) ───────────────────────────────────────────────
+# If you have logs, you can ban IPs that hit the API too hard
+# [traefik-auth]
+# enabled = true
+# filter = traefik-auth
+# logpath = /var/log/traefik/access.log
+# maxretry = 100
+# findtime = 5m
+# bantime = 1h
+
+# ─── Aether API rate limit (optional) ──────────────────────────────────────
+# If you log 429s, you can ban repeat offenders
+# Create /etc/fail2ban/filter.d/aether-rate-limit.conf:
+# [Definition]
+# failregex = ^.*"status":429.*"ip":"<HOST>".*$
+# ignoreregex =
+#
+# Then enable:
+# [aether-rate-limit]
+# enabled = true
+# filter = aether-rate-limit
+# logpath = /var/log/aether-energy/rate-limited.log
+# maxretry = 50
+# findtime = 1m
+# bantime = 1h

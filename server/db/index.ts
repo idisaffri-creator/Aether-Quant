@@ -3,11 +3,26 @@ import postgres from "postgres";
 import * as schema from "./schema";
 
 const connectionString = process.env.DATABASE_URL || "postgres://localhost:5432/aether_energy";
+const readReplicaUrl = process.env.DATABASE_READ_REPLICA_URL;
 
-const client = postgres(connectionString, { prepare: false });
+// Primary client — for writes + critical reads
+const client = postgres(connectionString, {
+  prepare: false,
+  max: 20,                    // pool size per process
+  idle_timeout: 30,           // close idle conns after 30s
+  connect_timeout: 10,
+  // Health check
+  onnotice: () => {},
+});
+
+// Read replica — falls back to primary if not configured
+const readClient = readReplicaUrl
+  ? postgres(readReplicaUrl, { prepare: false, max: 20, idle_timeout: 30, connect_timeout: 10 })
+  : client;
 
 export const db = drizzle(client, { schema });
-export { client };
+export const readDb = drizzle(readClient, { schema });
+export { client, readClient };
 export { schema };
 
 // ─── Lightweight, idempotent auto-migrations ────────────────────────────

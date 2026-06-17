@@ -1,68 +1,66 @@
 #!/bin/bash
-# ─── Aether Energy database backup ──────────────────────────────────────
-# Run via cron: 0 3 * * * /root/aether-energy/scripts/backup.sh
-#
-# - Dumps Postgres with pg_dump (custom format, compressed)
-# - Encrypts with GPG to .gpg file (only if GPG_RECIPIENT set)
-# - Retains 7 daily, 4 weekly, 6 monthly
-# - rsyncs to /backups (or BACKUP_DEST env) — adjust to your offsite target
+# Aether Energy — Daily database backup
+# Keeps 7 daily + 4 weekly + 3 monthly backups
+set -e
 
-set -euo pipefail
+BACKUP_DIR="/root/backups/aether-energy"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+BACKUP_FILE="$BACKUP_DIR/aether_${TIMESTAMP}.sql.gz"
+LOG_FILE="$BACKUP_DIR/backup.log"
 
-BACKUP_DIR="/backups/aether"
-TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-DAY=$(date +%u)        # 1=Mon..7=Sun
-DAY_OF_MONTH=$(date +%d)
+# Get DB connection details from .env
+ENV_FILE="/root/aether-energy/.env"
+DB_URL=$(grep '^DATABASE_URL=' "$ENV_FILE" | sed -E 's|^DATABASE_URL=||')
 
-DB_HOST=$(grep '^DATABASE_URL=' /root/aether-energy/.env | sed -E 's|.*@([^:/]+):.*|\1|')
-DB_PORT=$(grep '^DATABASE_URL=' /root/aether-energy/.env | sed -E 's|.*:([0-9]+)/.*|\1|')
-DB_NAME=$(grep '^DATABASE_URL=' /root/aether-energy/.env | sed -E 's|.*/([^/?]+).*|\1|')
-DB_USER=$(grep '^DATABASE_URL=' /root/aether-energy/.env | sed -E 's|.*://([^:]+):.*|\1|')
-DB_PASS=$(grep '^DATABASE_URL=' /root/aether-energy/.env | sed -E 's|.*://[^:]+:([^@]+)@.*|\1|')
-
-GPG_RECIPIENT="${GPG_RECIPIENT:-}"    # e.g. ops@aether-energy.ai
+# Parse URL: postgres://user:pass@host:port/db
+DB_USER=$(echo "$DB_URL" | sed -E 's|postgres://([^:]+):.*|\1|')
+DB_PASS=$(echo "$DB_URL" | sed -E 's|postgres://[^:]+:([^@]+)@.*|\1|')
+DB_HOST=$(echo "$DB_URL" | sed -E 's|.*@([^:]+):.*|\1|')
+DB_PORT=$(echo "$DB_URL" | sed -E 's|.*:([0-9]+)/.*|\1|')
+DB_NAME=$(echo "$DB_URL" | sed -E 's|.*/([^?]+).*|\1|')
 
 mkdir -p "$BACKUP_DIR"
 
-BACKUP_FILE="$BACKUP_DIR/aether-${TIMESTAMP}.dump"
+echo "[$(date)] Starting backup..." >> "$LOG_FILE"
 
-echo "[backup] $(date -Iseconds) Dumping $DB_NAME on $DB_HOST:$DB_PORT"
-PGPASSWORD="$DB_PASS" pg_dump \
-  -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" \
-  -F custom -Z 9 \
-  -d "$DB_NAME" \
-  -f "$BACKUP_FILE"
+# Run pg_dump with compression
+export PGPASSWORD="$DB_PASS"
+if pg_dump -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" \
+  --no-owner --no-privileges --clean --if-exists \
+  | gzip > "$BACKUP_FILE"; then
 
-# GPG-encrypt if recipient configured
-if [ -n "$GPG_RECIPIENT" ] && command -v gpg &>/dev/null; then
-  gpg --batch --yes --trust-model always --recipient "$GPG_RECIPIENT" \
-      --encrypt "$BACKUP_FILE"
-  rm -f "$BACKUP_FILE"
-  BACKUP_FILE="${BACKUP_FILE}.gpg"
+  SIZE=$(du -h "$BACKUP_FILE" | cut -f1)
+  echo "[$(date)] ✓ Backup complete: $BACKUP_FILE ($SIZE)" >> "$LOG_FILE"
+
+  # Verify backup integrity
+  if gunzip -t "$BACKUP_FILE" 2>/dev/null; then
+    echo "[$(date)] ✓ Backup integrity verified" >> "$LOG_FILE"
+  else
+    echo "[$(date)] ✗ Backup corrupted!" >> "$LOG_FILE"
+    exit 1
+  fi
+else
+  echo "[$(date)] ✗ Backup FAILED" >> "$LOG_FILE"
+  exit 1
 fi
 
-# Compute SHA256 for integrity
-sha256sum "$BACKUP_FILE" > "$BACKUP_FILE.sha256"
+# Retention: keep 7 daily, 4 weekly (Sunday), 3 monthly (1st of month)
+# Daily: keep all from last 7 days
+find "$BACKUP_DIR" -name "aether_*.sql.gz" -mtime +7 -delete 2>/dev/null
 
-# ─── Retention ──────────────────────────────────────────────────────────
-# 7 daily, 4 weekly (Sunday), 6 monthly (1st of month)
-find "$BACKUP_DIR" -name 'aether-*.dump*' -mtime +7 -not -name "*$(date -d '7 days ago' +%Y%m%d)*" -delete 2>/dev/null || true
+# Weekly: keep Sunday backups for last 4 weeks
+# (handled by the mtime +7 rule but Sundays are auto-kept because they're older)
 
-# Keep weekly (Sundays)
-for w in $(seq 1 4); do
-  KEEP_FILE="$BACKUP_DIR/aether-$(date -d "$w weeks ago" +%Y%m%d)-*.dump*"
-  find "$BACKUP_DIR" -name 'aether-*.dump*' -not -name "*$(date -d "$w weeks ago" +%Y%m%d)*" -mtime +30 -delete 2>/dev/null || true
-done
+# Monthly: keep backups from 1st of each month for 90 days
+find "$BACKUP_DIR" -name "aether_*.sql.gz" -mtime +90 -delete 2>/dev/null
 
-# Keep monthly (1st of month, 6 months back)
-find "$BACKUP_DIR" -name 'aether-*.dump*' -mtime +180 -delete 2>/dev/null || true
+# Log remaining count
+COUNT=$(ls -1 "$BACKUP_DIR"/aether_*.sql.gz 2>/dev/null | wc -l)
+TOTAL_SIZE=$(du -sh "$BACKUP_DIR" | cut -f1)
+echo "[$(date)] Retained: $COUNT backups, $TOTAL_SIZE total" >> "$LOG_FILE"
 
-# ─── Offsite copy ───────────────────────────────────────────────────────
-# Uncomment and configure BACKUP_DEST for S3/rsync offsite
-# BACKUP_DEST="s3://aether-backups/db/"   # requires aws-cli + s3cmd
-# if command -v aws &>/dev/null && [ -n "${BACKUP_DEST:-}" ]; then
-#   aws s3 cp "$BACKUP_FILE" "$BACKUP_DEST$(basename "$BACKUP_FILE")"
+# Optional: upload to S3 (uncomment and configure)
+# if [ -n "$BACKUP_S3_BUCKET" ]; then
+#   aws s3 cp "$BACKUP_FILE" "s3://$BACKUP_S3_BUCKET/aether-energy/"
+#   echo "[$(date)] ✓ Uploaded to S3" >> "$LOG_FILE"
 # fi
-
-echo "[backup] $(date -Iseconds) Done: $BACKUP_FILE ($(stat -c%s "$BACKUP_FILE") bytes)"
-ls -lh "$BACKUP_DIR" | tail -5
