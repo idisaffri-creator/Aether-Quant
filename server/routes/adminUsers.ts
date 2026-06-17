@@ -4,11 +4,13 @@ import { nanoid } from "nanoid";
 import { eq } from "drizzle-orm";
 import { db, schema } from "../db";
 import { requireAdmin } from "../middleware/adminAuth.js";
+import { authMiddleware } from "../middleware/auth.js";
+import { requireAdmin2FA } from "../middleware/requireAdmin2FA.js";
 import { generateToken } from "../middleware/auth.js";
 
 const router = Router();
 
-router.use(requireAdmin);
+router.use(authMiddleware, requireAdmin, requireAdmin2FA);
 
 interface ManagedUser {
   id: string;

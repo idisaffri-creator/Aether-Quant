@@ -2,6 +2,8 @@ import { Router, type Request, type Response, type NextFunction } from "express"
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { requireAdmin, isAdminUser } from "../middleware/adminAuth.js";
+import { authMiddleware } from "../middleware/auth.js";
+import { requireAdmin2FA } from "../middleware/requireAdmin2FA.js";
 import type {
   AdminMailMessage,
   AdminMailContact,
@@ -141,7 +143,7 @@ function validate<T>(schema: z.ZodType<T>) {
 
 const router = Router();
 
-router.use(requireAdmin);
+router.use(authMiddleware, requireAdmin, requireAdmin2FA);
 
 import { bulkLimiter, sendLimiter } from "../middleware/rateLimit.js";
 
