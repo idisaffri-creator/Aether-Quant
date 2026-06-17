@@ -4,7 +4,8 @@
 import { useState, useEffect } from "react";
 import { usePageTitle } from "@/lib/usePageTitle";
 import { motion } from "framer-motion";
-import { Trophy, Medal, Award, Crown, TrendingUp, TrendingDown, Loader2, Target, Activity } from "lucide-react";
+import { Trophy, Medal, Award, Crown, TrendingUp, TrendingDown, Target, Activity } from "lucide-react";
+import { SkeletonStat, SkeletonTable } from "@/components/Skeleton";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { num, signedMoney, money } from "@/lib/format";
@@ -36,7 +37,18 @@ export default function Leaderboard() {
   useEffect(() => { load(); }, []);
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>;
+    return (
+      <div className="space-y-6 max-w-4xl mx-auto">
+        <div className="h-8 w-48 bg-white/5 rounded animate-pulse" />
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <SkeletonStat />
+          <SkeletonStat />
+          <SkeletonStat />
+          <SkeletonStat />
+        </div>
+        <SkeletonTable rows={6} />
+      </div>
+    );
   }
 
   return (

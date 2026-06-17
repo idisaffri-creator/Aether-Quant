@@ -2,6 +2,7 @@ import { Router } from "express";
 import type { MarketData, OrderBook, Candle } from "../../shared/types";
 import { getQuotes, getCandles } from "../services/data/quoteCache";
 import { logger } from "../lib/logger";
+import { marketLimiter } from "../middleware/rateLimit";
 
 const router = Router();
 
@@ -9,7 +10,7 @@ const KNOWN_SYMBOLS = new Set([
   "WTI", "BRENT", "NGAS", "GOLD", "SILVER", "COPPER", "HEATOIL", "GASOL",
 ]);
 
-router.get("/quotes", async (_req, res) => {
+router.get("/quotes", marketLimiter, async (_req, res) => {
   try {
     const quotes = await getQuotes();
     // Strip internal _mock flag before sending
@@ -24,7 +25,7 @@ router.get("/quotes", async (_req, res) => {
   }
 });
 
-router.get("/quotes/:symbol", async (req, res) => {
+router.get("/quotes/:symbol", marketLimiter, async (req, res) => {
   const symbol = req.params.symbol.toUpperCase();
   if (!KNOWN_SYMBOLS.has(symbol)) {
     res.status(404).json({ code: "NOT_FOUND", message: `Symbol ${symbol} not found`, status: 404 });
@@ -55,7 +56,7 @@ router.get("/orderbook/:symbol", (req, res) => {
   });
 });
 
-router.get("/history/:symbol", async (req, res) => {
+router.get("/history/:symbol", marketLimiter, async (req, res) => {
   const symbol = req.params.symbol.toUpperCase();
   const resolution = (req.query.resolution as string) || "1h";
   const count = parseInt(req.query.count as string) || 100;

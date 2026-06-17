@@ -5,6 +5,7 @@ import { useLocation } from "wouter";
 import { useAtomValue } from "jotai";
 import { isAuthenticatedAtom } from "@/store/auth";
 import { motion, AnimatePresence } from "framer-motion";
+import { QuickStats } from "./QuickStats";
 
 const navLinks = [
   { label: "Terminal", href: "#terminal" },
@@ -75,11 +76,12 @@ export default function Navbar() {
           </nav>
 
           {/* Desktop CTA */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             className="hidden lg:flex items-center gap-3"
           >
+            {isAuthenticated && <QuickStats />}
             {isAuthenticated ? (
               <button
                 onClick={() => setLocation("/dashboard")}

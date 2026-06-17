@@ -46,3 +46,33 @@ export const sendLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+// Backtests are CPU-heavy — limit per user
+export const backtestLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  keyGenerator: (req) => `backtest:${req.user?.userId || ipKeyGenerator(req)}`,
+  message: { code: "RATE_LIMITED", message: "Too many backtests, please wait 60s", status: 429 },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// AI is expensive (LLM tokens) — limit per user
+export const aiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  keyGenerator: (req) => `ai:${req.user?.userId || ipKeyGenerator(req)}`,
+  message: { code: "RATE_LIMITED", message: "AI rate limit exceeded (20 req/min)", status: 429 },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Market data refresh — protect upstream rate limits (Yahoo, EIA)
+export const marketLimiter = rateLimit({
+  windowMs: 10 * 1000,
+  max: 30,
+  keyGenerator: (req) => `market:${req.user?.userId || ipKeyGenerator(req)}`,
+  message: { code: "RATE_LIMITED", message: "Too many market data requests, slow down", status: 429 },
+  standardHeaders: true,
+  legacyHeaders: false,
+});

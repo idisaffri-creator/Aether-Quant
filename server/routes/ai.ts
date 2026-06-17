@@ -14,6 +14,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { authMiddleware } from "../middleware/auth";
+import { aiLimiter } from "../middleware/rateLimit";
 import { redis } from "../lib/redis";
 import { logger } from "../lib/logger";
 
@@ -130,7 +131,7 @@ const chatSchema = z.object({
   })).min(1).max(20),
 });
 
-router.post("/chat", authMiddleware, async (req, res) => {
+router.post("/chat", authMiddleware, aiLimiter, async (req, res) => {
   try {
     const parsed = chatSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -158,7 +159,7 @@ const strategySchema = z.object({
   riskTolerance: z.enum(["low", "medium", "high"]).optional(),
 });
 
-router.post("/strategy", authMiddleware, async (req, res) => {
+router.post("/strategy", authMiddleware, aiLimiter, async (req, res) => {
   try {
     const parsed = strategySchema.safeParse(req.body);
     if (!parsed.success) {
@@ -186,7 +187,7 @@ router.get("/status", authMiddleware, (_req, res) => {
  * POST /api/ai/explain
  * Explain a backtest result in plain English.
  */
-router.post("/explain", authMiddleware, async (req, res) => {
+router.post("/explain", authMiddleware, aiLimiter, async (req, res) => {
   try {
     const schema = z.object({
       backtestId: z.string().min(1).optional(),

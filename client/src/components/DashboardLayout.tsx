@@ -43,6 +43,9 @@ import {
   Store,
   Trophy,
   Award,
+  Star,
+  ScrollText,
+  Calculator,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -85,12 +88,15 @@ const tradingNav = [
   { path: "/dashboard/intelligence", label: "Intelligence", icon: Activity },
   { path: "/dashboard/mail", label: "Mail", icon: Mail },
   { path: "/dashboard/audit", label: "Audit Trail", icon: Shield },
+  { path: "/dashboard/audit-log", label: "Audit Log", icon: ScrollText },
   { path: "/dashboard/trading", label: "Paper Trading", icon: TrendingUp },
   { path: "/dashboard/ai", label: "AI Assistant", icon: Sparkles },
   { path: "/dashboard/comparison", label: "Compare Backtests", icon: GitCompare },
   { path: "/dashboard/marketplace", label: "Marketplace", icon: Store },
   { path: "/dashboard/leaderboard", label: "Leaderboard", icon: Trophy },
   { path: "/dashboard/tournaments", label: "Tournaments", icon: Award },
+  { path: "/dashboard/watchlist", label: "Watchlist", icon: Star },
+  { path: "/dashboard/position-sizing", label: "Position Sizing", icon: Calculator },
   { path: "/dashboard/notifications", label: "Notifications", icon: Bell },
   { path: "/dashboard/kyc", label: "KYC Documents", icon: FileCheck },
   { path: "/dashboard/settings", label: "Settings", icon: SettingsIcon },
@@ -98,6 +104,7 @@ const tradingNav = [
 
 const adminNav = [
   { path: "/dashboard/admin-mail", label: "Admin Webmail", icon: Briefcase },
+  { path: "/dashboard/audit-log", label: "Audit Log", icon: ScrollText },
 ];
 
 const LogoSvg = () => (

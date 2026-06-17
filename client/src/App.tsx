@@ -43,6 +43,9 @@ const Mail = lazy(() => import("./pages/Dashboard/Mail"));
 const Audit = lazy(() => import("./pages/Dashboard/Audit"));
 const Settings = lazy(() => import("./pages/Dashboard/Settings"));
 const AdminMail = lazy(() => import("./pages/Dashboard/AdminMail"));
+const PositionSizing = lazy(() => import("./pages/Dashboard/PositionSizing"));
+const Watchlist = lazy(() => import("./pages/Dashboard/Watchlist"));
+const AuditLog = lazy(() => import("./pages/Dashboard/AuditLog"));
 
 function DashboardLoader() {
   return (
@@ -96,6 +99,9 @@ function Router() {
                 <Route path="/dashboard/marketplace" component={Marketplace} />
                 <Route path="/dashboard/leaderboard" component={Leaderboard} />
                 <Route path="/dashboard/tournaments" component={Tournaments} />
+                <Route path="/dashboard/position-sizing" component={PositionSizing} />
+                <Route path="/dashboard/watchlist" component={Watchlist} />
+                <Route path="/dashboard/audit-log" component={AuditLog} />
                 <Route path="/dashboard/admin-mail" component={AdminMail} />
                 <Route path="/dashboard/404" component={NotFound} />
                 <Route component={NotFound} />

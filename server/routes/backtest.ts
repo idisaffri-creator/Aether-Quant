@@ -8,6 +8,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { authMiddleware } from "../middleware/auth";
+import { backtestLimiter } from "../middleware/rateLimit";
 import { getBacktest, listBacktests } from "../services/trading/backtest";
 import { enqueueBacktest, getBacktestJob } from "../services/queue/backtestQueue";
 import { db, schema } from "../db";
@@ -35,7 +36,7 @@ const runSchema = z.object({
  * Enqueue a backtest. Returns immediately with { jobId, status: "queued" }.
  * UI polls /api/backtest/job/:id for status + result.
  */
-router.post("/run", authMiddleware, async (req, res) => {
+router.post("/run", authMiddleware, backtestLimiter, async (req, res) => {
   try {
     const parsed = runSchema.safeParse(req.body);
     if (!parsed.success) {
