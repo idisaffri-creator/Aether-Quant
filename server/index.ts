@@ -303,8 +303,18 @@ async function startServer() {
     app.use(express.static(staticPath));
   }
 
-  // SPA fallback
-  app.get("*", (_req, res) => {
+  // SPA fallback — but ONLY for browser navigation requests, NOT for /assets/*
+  app.get("*", (req, res, next) => {
+    // If the request looks like a static asset (has an extension) or is in /assets/,
+    // it's a missing asset — return a real 404 with no-cache, NOT the SPA HTML.
+    if (req.path.startsWith("/assets/") || path.extname(req.path)) {
+      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+      res.status(404).json({ code: "NOT_FOUND", message: `Asset not found: ${req.path}`, status: 404 });
+      return;
+    }
+    next();
+  }, (_req, res) => {
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
     res.sendFile(path.join(staticPath, "index.html"));
   });
 
