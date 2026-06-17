@@ -1,0 +1,114 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": true,
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Aether API RPS",
+      "id": 1,
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 0 },
+      "targets": [{ "expr": "sum(rate(http_requests_total[1m]))", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "reqps", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green" }, { "color": "red", "value": 100 }] } } }
+    },
+    {
+      "type": "stat",
+      "title": "P99 Latency",
+      "id": 2,
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 0 },
+      "targets": [{ "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    },
+    {
+      "type": "stat",
+      "title": "Error Rate",
+      "id": 3,
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 0 },
+      "targets": [{ "expr": "sum(rate(http_requests_total{status=~\"5..\"}[5m])) / sum(rate(http_requests_total[5m]))", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "percentunit" } }
+    },
+    {
+      "type": "stat",
+      "title": "Active Workers",
+      "id": 4,
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 0 },
+      "targets": [{ "expr": "sum(pm2_workers_up)", "refId": "A" }],
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" } } }
+    },
+    {
+      "type": "stat",
+      "title": "Postgres Connections",
+      "id": 5,
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 0 },
+      "targets": [{ "expr": "pg_stat_activity_count", "refId": "A" }]
+    },
+    {
+      "type": "stat",
+      "title": "Redis Memory",
+      "id": 6,
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 0 },
+      "targets": [{ "expr": "redis_memory_used_bytes / 1024 / 1024", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "decmbytes" } }
+    },
+    {
+      "type": "timeseries",
+      "title": "Request Rate by Endpoint",
+      "id": 7,
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "targets": [{ "expr": "sum by (route) (rate(http_requests_total[1m]))", "legendFormat": "{{route}}", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "reqps" } }
+    },
+    {
+      "type": "timeseries",
+      "title": "Latency P50 / P95 / P99",
+      "id": 8,
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "targets": [
+        { "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "p50", "refId": "A" },
+        { "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "p95", "refId": "B" },
+        { "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "p99", "refId": "C" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    },
+    {
+      "type": "timeseries",
+      "title": "Postgres Query Time",
+      "id": 9,
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "targets": [{ "expr": "histogram_quantile(0.95, sum(rate(pg_stat_statements_mean_exec_time_seconds[5m])) by (le, query))", "legendFormat": "{{query}}", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    },
+    {
+      "type": "timeseries",
+      "title": "Redis Operations",
+      "id": 10,
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "targets": [{ "expr": "sum by (cmd) (rate(redis_commands_total[1m]))", "legendFormat": "{{cmd}}", "refId": "A" }]
+    },
+    {
+      "type": "table",
+      "title": "Top 5 Slowest Queries (Postgres)",
+      "id": 11,
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 20 },
+      "targets": [{ "expr": "topk(5, pg_stat_statements_mean_exec_time_seconds)", "refId": "A", "format": "table", "instant": true }],
+      "transformations": [
+        { "id": "organize", "options": { "excludeByName": { "Time": true, "pg_stat_statements_queryid": true, "pg_stat_statements_userid": true, "pg_stat_statements_dbid": true } } }
+      ]
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 38,
+  "tags": ["aether", "production"],
+  "templating": { "list": [] },
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "",
+  "title": "Aether Energy — Production",
+  "uid": "aether-prod",
+  "version": 1,
+  "weekStart": ""
+}

@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import {
   TrendingUp, TrendingDown, BarChart3, Target, Shield, Percent,
   Hash, Download, Loader2, Play, Calendar, DollarSign, Sparkles,
-  CheckCircle2, AlertCircle,
+  CheckCircle2, AlertCircle, Brain,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine,
@@ -70,6 +70,8 @@ export default function Backtest() {
   const [result, setResult] = useState<BacktestResult | null>(null);
   const [history, setHistory] = useState<any[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [explanation, setExplanation] = useState<string | null>(null);
+  const [explaining, setExplaining] = useState(false);
 
   const { startDate, endDate } = useMemo(() => {
     const end = new Date();
@@ -120,6 +122,33 @@ export default function Backtest() {
   function downloadCsv() {
     if (!selectedId) return;
     window.open(`https://aether-energy.ai/api/backtest/${selectedId}/export.csv`, "_blank");
+  }
+
+  async function explainResult() {
+    if (!result) return;
+    setExplaining(true);
+    setExplanation(null);
+    try {
+      const r = await api.ai.explain({
+        strategy: strategy,
+        symbol: orderForm.symbol,
+        startDate,
+        endDate,
+        metrics: {
+          totalReturnPct: result.totalReturnPct,
+          sharpeRatio: result.metrics.sharpeRatio,
+          maxDrawdownPct: result.metrics.maxDrawdownPct,
+          winRate: result.metrics.winRate,
+          totalTrades: result.metrics.totalTrades,
+          finalEquity: result.finalEquity,
+        },
+      });
+      setExplanation(r.explanation);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to explain");
+    } finally {
+      setExplaining(false);
+    }
   }
 
   const equityData = useMemo(() => {
@@ -204,13 +233,22 @@ export default function Backtest() {
               />
             </div>
           </div>
-          <button
-            onClick={runBacktest}
-            disabled={running}
-            className="w-full sm:w-auto px-6 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            {running ? <><Loader2 className="w-4 h-4 animate-spin" /> Running...</> : <><Play className="w-4 h-4" /> Run backtest</>}
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            {result && (
+              <button onClick={explainResult} disabled={explaining} className="px-3 py-2.5 bg-card border border-border rounded-lg text-sm hover:border-primary/50 disabled:opacity-50 flex items-center gap-1.5">
+                {explaining ? <Loader2 className="w-4 h-4 animate-spin" /> : <Brain className="w-4 h-4" />}
+                {explanation ? "Re-explain" : "Explain with AI"}
+              </button>
+            )}
+            {result && (
+              <button onClick={downloadCsv} className="px-3 py-2.5 bg-card border border-border rounded-lg text-sm hover:border-primary/50 flex items-center gap-1.5">
+                <Download className="w-4 h-4" /> Export trades CSV
+              </button>
+            )}
+            <button onClick={runBacktest} disabled={running} className="px-6 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2">
+              {running ? <><Loader2 className="w-4 h-4 animate-spin" /> Running...</> : <><Play className="w-4 h-4" /> Run backtest</>}
+            </button>
+          </div>
         </div>
 
         <div className="glass-card rounded-xl p-5 space-y-2">
@@ -238,6 +276,18 @@ export default function Backtest() {
           )}
         </div>
       </div>
+
+      {explanation && (
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="glass-card rounded-xl p-5 border-l-2 border-l-primary">
+          <div className="flex items-start gap-3">
+            <Brain className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <div className="text-xs uppercase tracking-wider text-primary font-semibold mb-2">AI Explanation</div>
+              <div className="text-sm leading-relaxed whitespace-pre-wrap">{explanation}</div>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {result && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">

@@ -182,4 +182,47 @@ router.get("/status", authMiddleware, (_req, res) => {
   });
 });
 
+/**
+ * POST /api/ai/explain
+ * Explain a backtest result in plain English.
+ */
+router.post("/explain", authMiddleware, async (req, res) => {
+  try {
+    const schema = z.object({
+      backtestId: z.string().min(1).optional(),
+      strategy: z.string().min(1).optional(),
+      symbol: z.string().min(1).optional(),
+      startDate: z.string().optional(),
+      endDate: z.string().optional(),
+      metrics: z.object({
+        totalReturnPct: z.number().optional(),
+        sharpeRatio: z.number().optional(),
+        maxDrawdownPct: z.number().optional(),
+        winRate: z.number().optional(),
+        totalTrades: z.number().optional(),
+        finalEquity: z.number().optional(),
+      }).optional(),
+    });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ code: "VALIDATION", message: parsed.error.issues[0]?.message || "Invalid input", status: 400 });
+      return;
+    }
+    const m = parsed.data.metrics || {};
+    const prompt = `Explain this backtest result in 3-4 sentences, written for a trader. Be specific about what the numbers mean, what the strategy did well, and what risks remain.
+
+Strategy: ${parsed.data.strategy || "Unknown"}
+Symbol: ${parsed.data.symbol || "Unknown"}
+Period: ${parsed.data.startDate || "?"} to ${parsed.data.endDate || "?"}
+Total return: ${(m.totalReturnPct ?? 0) * 100 >= 0 ? "+" : ""}${(m.totalReturnPct ?? 0) * 100}%\nSharpe ratio: ${m.sharpeRatio ?? "?"}\nMax drawdown: ${((m.maxDrawdownPct ?? 0) * 100).toFixed(1)}%\nWin rate: ${((m.winRate ?? 0) * 100).toFixed(1)}%\nTotal trades: ${m.totalTrades ?? "?"}\nFinal equity: $${m.finalEquity ?? "?"}
+
+Use plain English. No bullet points. Don't use the word "however".`;
+
+    const result = await chat([{ role: "user", content: prompt }]);
+    res.json({ explanation: result.content, provider: result.provider });
+  } catch (err) {
+    res.status(500).json({ code: "INTERNAL", message: (err as Error).message });
+  }
+});
+
 export default router;

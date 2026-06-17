@@ -38,6 +38,8 @@ import {
   X,
   Sparkles,
   GitCompare,
+  Bell,
+  FileCheck,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -83,6 +85,8 @@ const tradingNav = [
   { path: "/dashboard/trading", label: "Paper Trading", icon: TrendingUp },
   { path: "/dashboard/ai", label: "AI Assistant", icon: Sparkles },
   { path: "/dashboard/comparison", label: "Compare Backtests", icon: GitCompare },
+  { path: "/dashboard/notifications", label: "Notifications", icon: Bell },
+  { path: "/dashboard/kyc", label: "KYC Documents", icon: FileCheck },
   { path: "/dashboard/settings", label: "Settings", icon: SettingsIcon },
 ];
 

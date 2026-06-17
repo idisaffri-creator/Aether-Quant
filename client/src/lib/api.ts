@@ -331,6 +331,25 @@ export const api = {
     status: () => request<{ submitted: boolean; status?: string; legalName?: string; country?: string; submittedAt?: string; reviewedAt?: string }>("/kyc/status"),
     createInquiry: () => request<{ id: string; providerRef: string; url: string; status: string }>("/kyc/inquiry", { method: "POST" }),
   },
+  notifications: {
+    list: (limit = 50) => request<{ notifications: Array<{ id: string; kind: string; title: string; body: string; meta: any; read: boolean; createdAt: string }> }>(`/notifications?limit=${limit}`),
+    unreadCount: () => request<{ count: number }>("/notifications/unread-count"),
+    markRead: (id: string) => request<{ ok: boolean }>(`/notifications/${id}/read`, { method: "POST" }),
+    markAllRead: () => request<{ ok: boolean }>("/notifications/read-all", { method: "POST" }),
+    delete: (id: string) => request<{ ok: boolean }>(`/notifications/${id}`, { method: "DELETE" }),
+  },
+  storage: {
+    status: () => request<{ configured: boolean; buckets: string[] }>("/storage/status"),
+    documents: () => request<{ objects: Array<{ key: string; size: number; lastModified: string }>; configured: boolean }>("/storage/kyc/list"),
+  },
+  ai: {
+    chat: (data: { messages: Array<{ role: "user" | "assistant" | "system"; content: string }> }) =>
+      request<{ content: string; provider: string; cached: boolean; latencyMs: number }>("/ai/chat", { method: "POST", body: JSON.stringify(data) }),
+    strategy: (data: { symbol: string; horizonDays?: number; riskTolerance?: "low" | "medium" | "high" }) =>
+      request<{ symbol: string; recommendation: string; provider: string }>("/ai/strategy", { method: "POST", body: JSON.stringify(data) }),
+    explain: (data: any) => request<{ explanation: string; provider: string }>("/ai/explain", { method: "POST", body: JSON.stringify(data) }),
+    status: () => request<{ provider: string; model: string; openai: boolean; ollama: boolean }>("/ai/status"),
+  },
 };
 
 export function createWebSocket(): WebSocket {

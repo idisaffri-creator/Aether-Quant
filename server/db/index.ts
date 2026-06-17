@@ -209,6 +209,20 @@ export async function runMigrations(): Promise<void> {
     )`;
     await client`CREATE INDEX IF NOT EXISTS custom_strategies_user_idx ON custom_strategies (user_id, created_at DESC)`;
 
+    // Notifications
+    await client`CREATE TABLE IF NOT EXISTS notifications (
+      id text PRIMARY KEY,
+      user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      kind text NOT NULL,
+      title text NOT NULL,
+      body text NOT NULL,
+      meta text,
+      read text NOT NULL DEFAULT 'false' CHECK (read IN ('true','false')),
+      created_at timestamp NOT NULL DEFAULT now()
+    )`;
+    await client`CREATE INDEX IF NOT EXISTS notifications_user_unread_idx ON notifications (user_id, read, created_at DESC)`;
+    await client`CREATE INDEX IF NOT EXISTS notifications_user_created_idx ON notifications (user_id, created_at DESC)`;
+
     console.log("[db] Auto-migrations + indexes complete");
   } catch (err) {
     console.warn("[db] Auto-migrations skipped/failed (continuing):", (err as Error).message);
