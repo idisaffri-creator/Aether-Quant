@@ -72,6 +72,52 @@ export async function runMigrations(): Promise<void> {
     await client`CREATE INDEX IF NOT EXISTS strategy_runs_user_idx ON strategy_runs (user_id, started_at DESC)`;
     await client`CREATE INDEX IF NOT EXISTS strategy_runs_strategy_idx ON strategy_runs (strategy_id, status)`;
 
+    // Orders table (Phase 2)
+    await client`CREATE TABLE IF NOT EXISTS orders (
+      id text PRIMARY KEY,
+      user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      strategy_id text,
+      symbol text NOT NULL,
+      side text NOT NULL CHECK (side IN ('buy','sell')),
+      type text NOT NULL CHECK (type IN ('market','limit','stop')),
+      quantity numeric(20,8) NOT NULL,
+      limit_price numeric(20,8),
+      stop_price numeric(20,8),
+      status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','filled','cancelled','rejected','partial')),
+      filled_qty numeric(20,8) NOT NULL DEFAULT 0,
+      avg_fill_price numeric(20,8),
+      rejection_reason text,
+      created_at timestamp NOT NULL DEFAULT now(),
+      filled_at timestamp,
+      cancelled_at timestamp
+    )`;
+
+    // Positions table (Phase 2)
+    await client`CREATE TABLE IF NOT EXISTS positions (
+      id text PRIMARY KEY,
+      user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      symbol text NOT NULL,
+      quantity numeric(20,8) NOT NULL,
+      avg_entry_price numeric(20,8) NOT NULL,
+      realized_pnl numeric(20,8) NOT NULL DEFAULT 0,
+      created_at timestamp NOT NULL DEFAULT now(),
+      updated_at timestamp NOT NULL DEFAULT now(),
+      UNIQUE(user_id, symbol)
+    )`;
+
+    // Strategy runs table (Phase 2)
+    await client`CREATE TABLE IF NOT EXISTS strategy_runs (
+      id text PRIMARY KEY,
+      strategy_id text NOT NULL,
+      user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      status text NOT NULL DEFAULT 'running' CHECK (status IN ('running','stopped','error')),
+      started_at timestamp NOT NULL DEFAULT now(),
+      stopped_at timestamp,
+      total_pnl numeric(20,8) NOT NULL DEFAULT 0,
+      trade_count integer NOT NULL DEFAULT 0,
+      last_error text
+    )`;
+
     console.log("[db] Auto-migrations + indexes complete");
   } catch (err) {
     console.warn("[db] Auto-migrations skipped/failed (continuing):", (err as Error).message);
