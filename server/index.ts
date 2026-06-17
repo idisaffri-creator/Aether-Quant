@@ -15,7 +15,7 @@ import { requestLogger } from "./middleware/requestLogger";
 import { idempotency } from "./middleware/idempotency";
 import { installShutdown, shutdownMiddleware } from "./lib/shutdown";
 import { logger } from "./lib/logger";
-import { initSentry, Sentry } from "./lib/sentry";
+import { initSentry, sentryRequestHandler, sentryTracingHandler, sentryErrorHandler, sentryClose } from "./lib/sentry";
 import { initOtel, shutdownOtel } from "./lib/otel";
 import authRoutes from "./routes/auth";
 import auth2faRoutes from "./routes/auth2fa";
@@ -81,8 +81,8 @@ async function startServer() {
   app.set("trust proxy", 1);
 
   // Sentry request + error handlers (must be before other middleware)
-  app.use(Sentry.Handlers.requestHandler());
-  app.use(Sentry.Handlers.tracingHandler());
+  app.use(sentryRequestHandler());
+  app.use(sentryTracingHandler());
 
   // ─── Observability first (so even errors get logged) ─────────────────
   app.use(requestId);
@@ -207,13 +207,13 @@ async function startServer() {
   });
 
   // Sentry error handler (must be after all routes)
-  app.use(Sentry.Handlers.errorHandler());
+  app.use(sentryErrorHandler());
 
   // ─── Graceful shutdown ───────────────────────────────────────────────
   installShutdown(server, wss);
   // Add OTel + Sentry flush to shutdown
   process.on("SIGTERM", () => {
-    Promise.allSettled([shutdownOtel(), Sentry.close(2000)]).then(() => {
+    Promise.allSettled([shutdownOtel(), sentryClose(2000)]).then(() => {
       logger.info("observability flushed");
     });
   });

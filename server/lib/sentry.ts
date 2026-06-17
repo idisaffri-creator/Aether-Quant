@@ -1,13 +1,11 @@
 import * as Sentry from "@sentry/node";
 import { logger } from "./logger";
 
+let initialized = false;
+
 /**
  * Sentry initialization (server side).
  * Disabled if SENTRY_DSN is not set.
- *
- * - Errors: 100% sampled
- * - Performance: SENTRY_TRACES_SAMPLE_RATE (default 10%)
- * - Profiling: SENTRY_PROFILES_SAMPLE_RATE (default 10%)
  */
 export function initSentry(): void {
   const dsn = process.env.SENTRY_DSN;
@@ -21,9 +19,7 @@ export function initSentry(): void {
     release: process.env.GIT_COMMIT || "unknown",
     tracesSampleRate: parseFloat(process.env.SENTRY_TRACES_SAMPLE_RATE || "0.1"),
     profilesSampleRate: parseFloat(process.env.SENTRY_PROFILES_SAMPLE_RATE || "0.1"),
-    // Don't send PII by default
     sendDefaultPii: false,
-    // Scrub sensitive data
     beforeSend(event) {
       if (event.request?.cookies) event.request.cookies = "[REDACTED]";
       if (event.user) {
@@ -33,7 +29,27 @@ export function initSentry(): void {
       return event;
     },
   });
+  initialized = true;
   logger.info("Sentry initialized");
 }
 
-export { Sentry };
+export function sentryRequestHandler() {
+  if (!initialized) return (_req: any, _res: any, next: any) => next();
+  return Sentry.Handlers.requestHandler();
+}
+
+export function sentryTracingHandler() {
+  if (!initialized) return (_req: any, _res: any, next: any) => next();
+  return Sentry.Handlers.tracingHandler();
+}
+
+export function sentryErrorHandler() {
+  if (!initialized) return (err: any, _req: any, _res: any, next: any) => next(err);
+  return Sentry.Handlers.errorHandler();
+}
+
+export async function sentryClose(timeout = 2000) {
+  if (!initialized) return;
+  await Sentry.close(timeout);
+}
+
