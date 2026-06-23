@@ -381,25 +381,352 @@ router.get("/docs", (_req, res) => {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Aether Energy API · Swagger UI</title>
-  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css" />
+  <title>Aether Energy — Documentation</title>
+  <style>
+    :root { --bg: #0a0a0f; --card: #12121a; --border: rgba(255,255,255,0.06); --text: #e4e4e7; --muted: #71717a; --accent: #f59e0b; --accent2: #3b82f6; --green: #10b981; --red: #ef4444; --purple: #8b5cf6; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+    .container { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
+    header { text-align: center; padding: 3rem 1rem 2rem; border-bottom: 1px solid var(--border); }
+    header h1 { font-size: 2.5rem; font-weight: 700; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    header p { color: var(--muted); margin-top: 0.5rem; font-size: 1.1rem; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+    .badge-live { background: rgba(16,185,129,0.15); color: var(--green); border: 1px solid rgba(16,185,129,0.3); }
+    .badge-paper { background: rgba(245,158,11,0.15); color: var(--accent); border: 1px solid rgba(245,158,11,0.3); }
+    .badge-free { background: rgba(139,92,246,0.15); color: var(--purple); border: 1px solid rgba(139,92,246,0.3); }
+    nav { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; padding: 1rem 0; border-bottom: 1px solid var(--border); margin-bottom: 2rem; }
+    nav a { color: var(--muted); text-decoration: none; font-size: 0.85rem; padding: 4px 10px; border-radius: 6px; transition: all 0.15s; }
+    nav a:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+    section { margin-bottom: 2.5rem; }
+    section h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+    section h2 .icon { font-size: 1.2rem; }
+    h3 { font-size: 1rem; font-weight: 600; color: var(--accent); margin: 1.2rem 0 0.5rem; }
+    p, li { color: var(--muted); font-size: 0.9rem; }
+    ul { list-style: none; padding: 0; }
+    ul li { padding: 4px 0; padding-left: 1.2rem; position: relative; }
+    ul li::before { content: "→"; position: absolute; left: 0; color: var(--accent); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; margin: 1rem 0; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 1.2rem; transition: border-color 0.15s; }
+    .card:hover { border-color: rgba(245,158,11,0.3); }
+    .card h4 { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.4rem; }
+    .card p { font-size: 0.82rem; }
+    .card .path { font-family: monospace; font-size: 0.75rem; color: var(--accent2); background: rgba(59,130,246,0.1); padding: 2px 6px; border-radius: 4px; margin-top: 0.5rem; display: inline-block; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th { text-align: left; color: var(--muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+    td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+    td:first-child { font-family: monospace; color: var(--accent2); font-size: 0.8rem; }
+    code { font-family: 'SF Mono', 'Fira Code', monospace; background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; font-size: 0.82rem; }
+    .tip { background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2); border-radius: 8px; padding: 1rem; margin: 1rem 0; }
+    .tip strong { color: var(--green); }
+    .warn { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: 8px; padding: 1rem; margin: 1rem 0; }
+    .warn strong { color: var(--red); }
+    footer { text-align: center; padding: 2rem 0; border-top: 1px solid var(--border); margin-top: 2rem; }
+    footer p { font-size: 0.8rem; }
+    @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } header h1 { font-size: 1.8rem; } }
+  </style>
 </head>
 <body>
-  <div id="swagger-ui"></div>
-  <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js" crossorigin></script>
-  <script>
-    window.onload = () => {
-      SwaggerUIBundle({
-        url: '/api/openapi.json',
-        dom_id: '#swagger-ui',
-        deepLinking: true,
-        presets: [SwaggerUIBundle.presets.apis],
-        layout: 'BaseLayout',
-        tryItOutEnabled: true,
-        persistAuthorization: true,
-      });
-    };
-  </script>
+  <header>
+    <h1>Aether Energy</h1>
+    <p>AI-Powered Energy Commodity Trading Platform <span class="badge badge-live">Live</span> <span class="badge badge-paper">Paper</span> <span class="badge badge-free">Free Tier</span></p>
+  </header>
+  <div class="container">
+    <nav>
+      <a href="#quickstart">Quick Start</a>
+      <a href="#market-data">Market Data</a>
+      <a href="#trading">Trading</a>
+      <a href="#strategies">Strategies</a>
+      <a href="#backtest">Backtest</a>
+      <a href="#agents">AI Agents</a>
+      <a href="#portfolio">Portfolio</a>
+      <a href="#intelligence">Intelligence</a>
+      <a href="#tools">Tools</a>
+      <a href="#data-sources">Data Sources</a>
+      <a href="#account">Account</a>
+      <a href="#api">API</a>
+    </nav>
+
+    <section id="quickstart">
+      <h2><span class="icon">🚀</span> Quick Start</h2>
+      <div class="grid">
+        <div class="card">
+          <h4>1. Create Account</h4>
+          <p>Sign up with email + password. Free tier gives you full access to paper trading, backtesting, and 8 commodity symbols.</p>
+        </div>
+        <div class="card">
+          <h4>2. Explore the Dashboard</h4>
+          <p>The Overview page shows live market data, your portfolio, and recent signals. Everything updates in real-time via WebSocket.</p>
+        </div>
+        <div class="card">
+          <h4>3. Run a Backtest</h4>
+          <p>Pick a strategy (Mean Reversion, Momentum, Buy & Hold), a symbol, and a date range. Results come back in 1-10s with equity curves and metrics.</p>
+        </div>
+        <div class="card">
+          <h4>4. Start Paper Trading</h4>
+          <p>Place market, limit, or stop orders with virtual capital. Track P&L, positions, and order history — zero risk.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="market-data">
+      <h2><span class="icon">📈</span> Market Data</h2>
+      <p>Real-time and historical data for energy commodities, metals, and crypto:</p>
+      <table>
+        <thead><tr><th>Symbol</th><th>Name</th><th>Exchange</th><th>Source</th></tr></thead>
+        <tbody>
+          <tr><td>WTI</td><td>WTI Crude Oil</td><td>CME (CL=F)</td><td>Yahoo / Finnhub</td></tr>
+          <tr><td>BRENT</td><td>Brent Crude Oil</td><td>ICE (BZ=F)</td><td>Yahoo / Finnhub</td></tr>
+          <tr><td>NGAS</td><td>Natural Gas</td><td>CME (NG=F)</td><td>Yahoo / Finnhub</td></tr>
+          <tr><td>GOLD</td><td>Gold</td><td>COMEX (GC=F)</td><td>Yahoo / Finnhub</td></tr>
+          <tr><td>SILVER</td><td>Silver</td><td>COMEX (SI=F)</td><td>Yahoo / Finnhub</td></tr>
+          <tr><td>COPPER</td><td>Copper</td><td>COMEX (HG=F)</td><td>Yahoo / Finnhub</td></tr>
+          <tr><td>HEATOIL</td><td>Heating Oil</td><td>CME (HO=F)</td><td>Yahoo / Finnhub</td></tr>
+          <tr><td>GASOL</td><td>RBOB Gasoline</td><td>CME (RB=F)</td><td>Yahoo / Finnhub</td></tr>
+          <tr><td>BTC</td><td>Bitcoin</td><td>Binance</td><td>Binance WS</td></tr>
+          <tr><td>ETH</td><td>Ethereum</td><td>Binance</td><td>Binance WS</td></tr>
+          <tr><td>SOL</td><td>Solana</td><td>Binance</td><td>Binance WS</td></tr>
+          <tr><td>BNB</td><td>Binance Coin</td><td>Binance</td><td>Binance WS</td></tr>
+        </tbody>
+      </table>
+      <div class="tip"><strong>Tip:</strong> Use the Trade page for live charts, order books, and depth views. Switch between timeframes (1m, 5m, 15m, 1h, 1d). The Watchlist page lets you pin your favorite symbols.</div>
+    </section>
+
+    <section id="trading">
+      <h2><span class="icon">💹</span> Paper Trading</h2>
+      <p>Simulate real trading with virtual capital. All orders execute against live market prices with realistic slippage.</p>
+      <div class="grid">
+        <div class="card">
+          <h4>Order Types</h4>
+          <p><code>Market</code> — instant fill at current price<br><code>Limit</code> — fill at your price or better<br><code>Stop</code> — triggers at threshold</p>
+        </div>
+        <div class="card">
+          <h4>P&L Tracking</h4>
+          <p>Real-time unrealized and realized P&L. Paper balance, equity curve, trade count, and per-position metrics.</p>
+        </div>
+        <div class="card">
+          <h4>Positions</h4>
+          <p>Open positions update live. Average entry price, quantity, and P&L per position. Auto-close on stop/target.</p>
+        </div>
+        <div class="card">
+          <h4>CSV Export</h4>
+          <p>Download your full order history as CSV for analysis in Excel, Python, or R.</p>
+        </div>
+      </div>
+      <div class="path">/dashboard/trading</div>
+    </section>
+
+    <section id="strategies">
+      <h2><span class="icon">🧠</span> Strategies</h2>
+      <p>Build, backtest, and deploy algorithmic trading strategies:</p>
+      <div class="grid">
+        <div class="card">
+          <h4>My Strategies</h4>
+          <p>Create custom strategies with entry/exit conditions (RSI, MACD, MA Crossover, Volume Spike). Enable/disable with one click.</p>
+          <div class="path">/dashboard/strategies</div>
+        </div>
+        <div class="card">
+          <h4>Strategy Templates</h4>
+          <p>Pre-built templates: Mean Reversion, Momentum, Bollinger Breakout, RSI Divergence. Clone and customize.</p>
+          <div class="path">/dashboard/library</div>
+        </div>
+        <div class="card">
+          <h4>Strategy Optimizer</h4>
+          <p>Grid-search over parameter combinations. Find the optimal lookback, threshold, and hold period for your strategy.</p>
+          <div class="path">/dashboard/optimization</div>
+        </div>
+        <div class="card">
+          <h4>Marketplace</h4>
+          <p>Publish your strategies, rate others, and clone proven performers. Community-driven strategy discovery.</p>
+          <div class="path">/dashboard/marketplace</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="backtest">
+      <h2><span class="icon">📊</span> Backtesting</h2>
+      <p>Test strategies against historical data with realistic slippage and transaction costs:</p>
+      <ul>
+        <li>Supports 3 strategies: Mean Reversion, Momentum, Buy & Hold</li>
+        <li>Configurable date ranges (3M, 6M, 1Y, 2Y) and initial balance</li>
+        <li>Results include: Sharpe ratio, max drawdown, win rate, equity curve, trade list</li>
+        <li>Compare up to 5 backtests side-by-side with normalized equity curves</li>
+        <li>AI explanation: click "Explain with AI" for natural language analysis of results</li>
+      </ul>
+      <div class="path">/dashboard/backtest &nbsp;|&nbsp; /dashboard/comparison</div>
+    </section>
+
+    <section id="agents">
+      <h2><span class="icon">🤖</span> AI Agents</h2>
+      <p>Autonomous AI agents that monitor markets and execute strategies:</p>
+      <div class="grid">
+        <div class="card">
+          <h4>Agent Fleet</h4>
+          <p>6 specialized agents: Trading, Risk, Market Intelligence, Compliance, Portfolio, and Signal. Each runs independently.</p>
+          <div class="path">/dashboard/agents</div>
+        </div>
+        <div class="card">
+          <h4>Agent Team</h4>
+          <p>Multi-agent coordination. Agents share signals and risk assessments. Orchestrate complex strategies across agents.</p>
+          <div class="path">/dashboard/team</div>
+        </div>
+        <div class="card">
+          <h4>Intelligence</h4>
+          <p>Real-time agent metrics, benchmarks, and comparison. See which agents perform best on which symbols.</p>
+          <div class="path">/dashboard/intelligence</div>
+        </div>
+        <div class="card">
+          <h4>AI Assistant</h4>
+          <p>Chat with the AI for market analysis, strategy suggestions, and portfolio advice. Powered by OpenAI or local Ollama.</p>
+          <div class="path">/dashboard/ai</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="portfolio">
+      <h2><span class="icon">💼</span> Portfolio</h2>
+      <p>Track your complete trading portfolio with analytics:</p>
+      <ul>
+        <li>Total value, P&L, and allocation breakdown by symbol</li>
+        <li>Performance metrics: Sharpe ratio, Sortino ratio, max drawdown, Value at Risk</li>
+        <li>30-day P&L chart with daily breakdown</li>
+        <li>Open positions with live unrealized P&L</li>
+        <li>Trade journal: annotate trades with thesis, lessons, tags, and ratings</li>
+      </ul>
+      <div class="path">/dashboard/portfolio &nbsp;|&nbsp; /dashboard/journal</div>
+    </section>
+
+    <section id="intelligence">
+      <h2><span class="icon">📡</span> Intelligence & Analysis</h2>
+      <p>Multi-factor analysis combining technical, fundamental, and sentiment data:</p>
+      <div class="grid">
+        <div class="card">
+          <h4>Technical Analysis</h4>
+          <p>RSI, MACD, Bollinger Bands, SMA/EMA crossovers, Stochastic, ATR, OBV. All computed in real-time.</p>
+          <div class="path">/dashboard/analysis</div>
+        </div>
+        <div class="card">
+          <h4>News Feed</h4>
+          <p>Aggregated from GDELT + NewsAPI with sentiment scoring. Filter by symbol, sentiment, and source.</p>
+          <div class="path">/dashboard/trade (News tab)</div>
+        </div>
+        <div class="card">
+          <h4>Macro Dashboard</h4>
+          <p>Federal funds rate, 10Y yield, yield curve, CPI, unemployment. Fed meeting calendar with countdown timers.</p>
+          <div class="path">/dashboard/overview</div>
+        </div>
+        <div class="card">
+          <h4>Pipeline & Ops</h4>
+          <p>Live data flow observability. See which adapters are healthy, ingest latency, and pipeline metrics.</p>
+          <div class="path">/dashboard/pipeline</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tools">
+      <h2><span class="icon">🔧</span> Trading Tools</h2>
+      <div class="grid">
+        <div class="card">
+          <h4>Price Alerts</h4>
+          <p>Set price thresholds for any symbol. Get notified via email when triggered. Supports above/below/crosses conditions.</p>
+          <div class="path">/dashboard/alerts</div>
+        </div>
+        <div class="card">
+          <h4>Watchlist</h4>
+          <p>Pin your favorite symbols for quick access. Persists across sessions. Auto-refreshes prices every 60s.</p>
+          <div class="path">/dashboard/watchlist</div>
+        </div>
+        <div class="card">
+          <h4>Position Sizing</h4>
+          <p>Calculate optimal position size based on risk tolerance, account size, and stop-loss level. Kelly criterion included.</p>
+          <div class="path">/dashboard/position-sizing</div>
+        </div>
+        <div class="card">
+          <h4>Idea Extractor</h4>
+          <p>Paste a trading idea or article. AI extracts entry/exit conditions, risk parameters, and converts to a backtestable strategy.</p>
+          <div class="path">/dashboard/extractor</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="data-sources">
+      <h2><span class="icon">🛰️</span> Data Sources</h2>
+      <p>13 independent data adapters, each fault-tolerant with cache fallback:</p>
+      <table>
+        <thead><tr><th>Source</th><th>Type</th><th>Auth</th><th>Rate Limit</th></tr></thead>
+        <tbody>
+          <tr><td>Yahoo Finance</td><td>Market quotes + candles</td><td>None (free)</td><td>~2000 req/day</td></tr>
+          <tr><td>Finnhub</td><td>Market quotes + WebSocket</td><td>Free API key</td><td>60 req/min</td></tr>
+          <tr><td>Alpha Vantage</td><td>Technical indicators</td><td>Free API key</td><td>25 req/day</td></tr>
+          <tr><td>Binance</td><td>Crypto + WebSocket</td><td>None (free)</td><td>Unlimited</td></tr>
+          <tr><td>FRED</td><td>Macro economics</td><td>Free API key</td><td>120 req/min</td></tr>
+          <tr><td>Open-Meteo</td><td>Weather (HDD/CDD)</td><td>None (free)</td><td>10,000/day</td></tr>
+          <tr><td>Alternative.me</td><td>Fear & Greed Index</td><td>None (free)</td><td>Daily</td></tr>
+          <tr><td>Binance Futures</td><td>Open Interest, funding</td><td>None (free)</td><td>Unlimited</td></tr>
+          <tr><td>CFTC</td><td>COT Reports</td><td>None (free)</td><td>Weekly</td></tr>
+          <tr><td>EIA (DOE)</td><td>Energy fundamentals</td><td>Free API key</td><td>2,500/day</td></tr>
+          <tr><td>NewsAPI</td><td>Curated headlines</td><td>Free API key</td><td>100/day</td></tr>
+          <tr><td>GDELT</td><td>Global news</td><td>None (free)</td><td>1 req/sec</td></tr>
+          <tr><td>Ollama</td><td>Local LLM (sentiment)</td><td>Self-hosted</td><td>Unlimited</td></tr>
+        </tbody>
+      </table>
+      <div class="tip"><strong>Tip:</strong> Most features work without API keys. Add keys for enhanced data: <code>FINNHUB_API_KEY</code>, <code>ALPHA_VANTAGE_API_KEY</code>, <code>FRED_API_KEY</code>, <code>EIA_API_KEY</code>, <code>NEWSAPI_KEY</code>. Set them in your account settings or environment.</div>
+    </section>
+
+    <section id="account">
+      <h2><span class="icon">👤</span> Account & Security</h2>
+      <div class="grid">
+        <div class="card">
+          <h4>Authentication</h4>
+          <p>Email + password with JWT tokens. Optional 2FA via TOTP authenticator app. Backup codes provided on enable.</p>
+        </div>
+        <div class="card">
+          <h4>KYC</h4>
+          <p>Upload identity documents for live trading verification. Required before switching from paper to live mode.</p>
+          <div class="path">/dashboard/kyc</div>
+        </div>
+        <div class="card">
+          <h4>Risk Management</h4>
+          <p>Set max position size, daily loss limit, max open orders, and kill switch. All orders validated against limits.</p>
+          <div class="path">/dashboard/settings</div>
+        </div>
+        <div class="card">
+          <h4>API Keys</h4>
+          <p>Generate API keys for programmatic access. Scoped permissions (read:trades, write:orders, admin). Rate-limited per scope.</p>
+          <div class="path">/dashboard/api-keys</div>
+        </div>
+      </div>
+      <div class="warn"><strong>GDPR:</strong> You can export all your data (Art. 20) or request account deletion (Art. 17) from Settings. Audit log records all account activity.</div>
+    </section>
+
+    <section id="api">
+      <h2><span class="icon">⚡</span> API Reference</h2>
+      <p>Full REST API with OpenAPI 3.1 spec. All endpoints return JSON. Authentication via Bearer JWT token.</p>
+      <div class="grid">
+        <div class="card">
+          <h4>OpenAPI Spec</h4>
+          <p>Machine-readable API specification with all endpoints, schemas, and response types.</p>
+          <div class="path"><a href="/api/openapi.json" style="color: var(--accent2);">/api/openapi.json</a></div>
+        </div>
+        <div class="card">
+          <h4>Swagger UI</h4>
+          <p>Interactive API explorer. Try requests directly from the browser with persistent auth.</p>
+          <div class="path"><a href="/api/swagger" style="color: var(--accent2);">/api/swagger</a></div>
+        </div>
+        <div class="card">
+          <h4>Health Checks</h4>
+          <p><code>/live</code> — liveness probe<br><code>/ready</code> — DB + Redis readiness<br><code>/metrics</code> — Prometheus format</p>
+        </div>
+        <div class="card">
+          <h4>Rate Limits</h4>
+          <p>100 req/15min general. 60/min API. 10/min backtests. 20/min AI. 30/min market data.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+  <footer>
+    <p>Aether Energy v1.0.0 · Real-time energy commodity trading platform</p>
+    <p style="margin-top:0.5rem"><a href="/" style="color: var(--accent); text-decoration: none;">Home</a> · <a href="/api/openapi.json" style="color: var(--accent2); text-decoration: none;">API</a> · <a href="/api/swagger" style="color: var(--accent2); text-decoration: none;">Swagger</a> · <a href="/status" style="color: var(--green); text-decoration: none;">Status</a></p>
+  </footer>
 </body>
 </html>`);
 });
