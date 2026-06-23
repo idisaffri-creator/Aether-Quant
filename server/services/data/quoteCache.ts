@@ -1,22 +1,25 @@
 /**
  * Quote cache — Redis-backed with graceful fallback to mock.
- * Always returns *something* (never throws); if all sources fail, falls back to
- * deterministic mock data so the UI never goes blank.
+ * Multi-source: Yahoo → Finnhub → Binance (crypto) → Mock
+ * Always returns *something* (never throws).
  */
 import { cacheGetSet } from "../../lib/redis";
 import { logger } from "../../lib/logger";
 import { fetchYahooQuotes } from "./adapters/yahoo";
 import { fetchYahooCandles, symbolToYahoo } from "./adapters/yahoo";
+import { fetchFinnhubQuotes } from "./adapters/finnhub";
+import { fetchBinanceQuotes } from "./adapters/binance";
 import type { MarketData, Candle } from "../../../shared/types";
 
 const QUOTES_KEY = "data:quotes:all";
-const QUOTES_TTL_S = 60; // 1 min for live trading feel
+const QUOTES_TTL_S = 60;
 
-// Deterministic mock fallback (so the UI never breaks)
 function mockQuotes(): MarketData[] {
   const base: Record<string, number> = {
     WTI: 78.43, BRENT: 82.17, NGAS: 2.14, GOLD: 2034.50,
     SILVER: 22.85, COPPER: 3.84, HEATOIL: 2.51, GASOL: 2.42,
+    BTC: 67500, ETH: 3450, BNB: 590, SOL: 145,
+    XRP: 0.52, ADA: 0.45, DOGE: 0.15, AVAX: 38,
   };
   return Object.entries(base).map(([symbol, price]) => {
     const drift = (Math.random() - 0.5) * price * 0.002;
@@ -39,11 +42,39 @@ function mockQuotes(): MarketData[] {
 
 export async function getQuotes(): Promise<MarketData[]> {
   return cacheGetSet<MarketData[]>(QUOTES_KEY, QUOTES_TTL_S, async () => {
-    const real = await fetchYahooQuotes();
-    if (real && real.length > 0) {
-      logger.info({ count: real.length, source: "yahoo" }, "quotes from real feed");
-      return real;
+    // Source 1: Yahoo (energy commodities — no key needed)
+    const yahoo = await fetchYahooQuotes();
+    // Source 2: Finnhub (backup for energy commodities + US stocks)
+    const finnhub = await fetchFinnhubQuotes();
+    // Source 3: Binance (crypto pairs)
+    const binance = await fetchBinanceQuotes();
+
+    // Merge: prefer Yahoo for commodities, Binance for crypto, Finnhub as gap filler
+    const merged = new Map<string, MarketData>();
+
+    if (yahoo) {
+      for (const q of yahoo) merged.set(q.symbol, q);
     }
+    if (finnhub) {
+      for (const q of finnhub) {
+        if (!merged.has(q.symbol)) merged.set(q.symbol, q);
+      }
+    }
+    if (binance) {
+      for (const q of binance) merged.set(q.symbol, q);
+    }
+
+    const quotes = Array.from(merged.values());
+    if (quotes.length > 0) {
+      const sources = [
+        yahoo ? "yahoo" : null,
+        finnhub ? "finnhub" : null,
+        binance ? "binance" : null,
+      ].filter(Boolean).join("+");
+      logger.info({ count: quotes.length, sources }, "quotes from real feeds");
+      return quotes;
+    }
+
     logger.warn("all quote feeds failed, using mock");
     return mockQuotes();
   });
@@ -53,9 +84,10 @@ export async function getCandles(symbol: string, interval = "1h", range = "5d"):
   const yahooSym = symbolToYahoo(symbol);
   const cacheKey = `data:candles:${symbol}:${interval}:${range}`;
   return cacheGetSet<Candle[]>(cacheKey, 300, async () => {
-    if (!yahooSym) return mockCandles(symbol, interval, range);
-    const real = await fetchYahooCandles(yahooSym, interval as any, range as any);
-    if (real && real.length > 0) return real;
+    if (yahooSym) {
+      const real = await fetchYahooCandles(yahooSym, interval as any, range as any);
+      if (real && real.length > 0) return real;
+    }
     return mockCandles(symbol, interval, range);
   });
 }

@@ -17,6 +17,10 @@ import { getYahooStatus } from "./adapters/yahoo";
 import { getNewsapiStatus } from "./adapters/newsapi";
 import { getGdeltStatus } from "./adapters/gdelt";
 import { getOllamaStatus } from "./adapters/ollama";
+import { getFinnhubStatus } from "./adapters/finnhub";
+import { getAlphaVantageStatus } from "./adapters/alphavantage";
+import { getBinanceStatus } from "./adapters/binance";
+import { getFredStatus, fetchAllMacroSeries } from "./adapters/fred";
 import { broadcastTick } from "../../ws/tickBroadcaster";
 import { processTick } from "../trading/paperEngine";
 import { processSignals } from "../trading/strategyRunner";
@@ -31,11 +35,15 @@ let intervals: NodeJS.Timeout[] = [];
 
 export interface DataFeedStatus {
   yahoo: ReturnType<typeof getYahooStatus>;
+  finnhub: ReturnType<typeof getFinnhubStatus>;
+  alphavantage: ReturnType<typeof getAlphaVantageStatus>;
+  binance: ReturnType<typeof getBinanceStatus>;
+  fred: ReturnType<typeof getFredStatus>;
   eia: ReturnType<typeof getEiaStatus>;
   newsapi: ReturnType<typeof getNewsapiStatus>;
   gdelt: ReturnType<typeof getGdeltStatus>;
   ollama: { reachable: boolean; model: string };
-  lastRun: { quotes: string | null; eia: string | null; news: string | null; signals: string | null };
+  lastRun: { quotes: string | null; eia: string | null; news: string | null; signals: string | null; macro: string | null };
   ingestHealthy: boolean;
 }
 
@@ -43,6 +51,10 @@ export async function getDataStatus(): Promise<DataFeedStatus> {
   const ollama = await getOllamaStatus();
   return {
     yahoo: getYahooStatus(),
+    finnhub: getFinnhubStatus(),
+    alphavantage: getAlphaVantageStatus(),
+    binance: getBinanceStatus(),
+    fred: getFredStatus(),
     eia: getEiaStatus(),
     newsapi: getNewsapiStatus(),
     gdelt: getGdeltStatus(),
@@ -55,15 +67,15 @@ export async function getDataStatus(): Promise<DataFeedStatus> {
 async function getIngestRuns(): Promise<DataFeedStatus["lastRun"]> {
   try {
     const v = await cacheGetSet<any>("data:ingest:status", 30, async () => ({
-      quotes: null, eia: null, news: null, signals: null,
+      quotes: null, eia: null, news: null, signals: null, macro: null,
     }));
-    return v || { quotes: null, eia: null, news: null, signals: null };
+    return v || { quotes: null, eia: null, news: null, signals: null, macro: null };
   } catch {
-    return { quotes: null, eia: null, news: null, signals: null };
+    return { quotes: null, eia: null, news: null, signals: null, macro: null };
   }
 }
 
-async function recordRun(key: "quotes" | "eia" | "news" | "signals") {
+async function recordRun(key: "quotes" | "eia" | "news" | "signals" | "macro") {
   const s = await getIngestRuns();
   s[key] = new Date().toISOString();
   // Short TTL — not critical, just for /api/data/status display
@@ -78,19 +90,21 @@ export function startIngest(): void {
   const eiaMs = parseInt(process.env.EIA_INTERVAL_MS || "3600000");
   const newsMs = parseInt(process.env.NEWS_INTERVAL_MS || "1800000");
   const signalsMs = parseInt(process.env.SIGNALS_INTERVAL_MS || "300000");
+  const macroMs = parseInt(process.env.MACRO_INTERVAL_MS || "3600000");
 
-  logger.info({ quotesMs, eiaMs, newsMs, signalsMs }, "ingest worker starting");
+  logger.info({ quotesMs, eiaMs, newsMs, signalsMs, macroMs }, "ingest worker starting");
 
-  // Run once immediately, then on interval
   void runQuoteTick();
   void runEiaTick();
   void runNewsTick();
   void runSignalTick();
+  void runMacroTick();
 
   intervals.push(setInterval(() => void runQuoteTick(), quotesMs));
   intervals.push(setInterval(() => void runEiaTick(), eiaMs));
   intervals.push(setInterval(() => void runNewsTick(), newsMs));
   intervals.push(setInterval(() => void runSignalTick(), signalsMs));
+  intervals.push(setInterval(() => void runMacroTick(), macroMs));
 }
 
 export function stopIngest(): void {
@@ -113,13 +127,13 @@ async function runQuoteTick(): Promise<void> {
     await processTick(quotes).catch((err) => logger.warn({ err: err.message }, "processTick failed"));
     // Process signals → submit paper orders for users with running strategies
     const sigResult = await processSignals(quotes).catch((err) => logger.warn({ err: err.message }, "processSignals failed"));
-    if (sigResult.ordersSubmitted > 0) {
+    if (sigResult && "ordersSubmitted" in sigResult && sigResult.ordersSubmitted > 0) {
       logger.info({ submitted: sigResult.ordersSubmitted }, "strategy runner: orders from signals");
     }
     // Process user-defined custom strategies (RSI/MACD/etc.)
     const customResult = await processCustomStrategies().catch((err) => logger.warn({ err: err.message }, "processCustomStrategies failed"));
-    if (customResult.ordersPlaced > 0) {
-      logger.info({ evaluated: customResult.evaluated, triggered: customResult.triggered, placed: customResult.ordersPlaced }, "custom strategies: orders placed");
+    if (customResult && "ordersPlaced" in customResult && customResult.ordersPlaced > 0) {
+      logger.info({ evaluated: (customResult as any).evaluated, triggered: (customResult as any).triggered, placed: (customResult as any).ordersPlaced }, "custom strategies: orders placed");
     }
   } catch (err) {
     logger.warn({ err: (err as Error).message }, "quote tick failed");
@@ -144,6 +158,19 @@ async function runNewsTick(): Promise<void> {
     broadcastTick({ type: "news", data: { articles: articles.slice(0, 5), source }, ts: Date.now() });
   } catch (err) {
     logger.warn({ err: (err as Error).message }, "news tick failed");
+  }
+}
+
+async function runMacroTick(): Promise<void> {
+  try {
+    const series = await fetchAllMacroSeries();
+    await recordRun("macro");
+    if (series.length > 0) {
+      broadcastTick({ type: "macro", data: series, ts: Date.now() });
+      logger.info({ count: series.length }, "macro tick");
+    }
+  } catch (err) {
+    logger.warn({ err: (err as Error).message }, "macro tick failed");
   }
 }
 
@@ -195,8 +222,7 @@ async function generateSignals(): Promise<TradeSignal[]> {
         confidence: Math.min(0.9, 0.5 + Math.abs(q.change24h) / 20),
         strategy: "Mean Reversion (oversold)",
         reason: `24h drop of ${q.change24h.toFixed(2)}% suggests oversold conditions; watching for reversal.`,
-        createdAt: new Date().toISOString(),
-        expiresAt: new Date(Date.now() + 24 * 3600_000).toISOString(),
+        timestamp: Date.now(),
         acknowledged: false,
       });
     } else if (q.change24h >= 3) {
@@ -207,8 +233,7 @@ async function generateSignals(): Promise<TradeSignal[]> {
         confidence: Math.min(0.9, 0.5 + Math.abs(q.change24h) / 20),
         strategy: "Mean Reversion (overbought)",
         reason: `24h rally of ${q.change24h.toFixed(2)}% suggests overbought conditions; watching for pullback.`,
-        createdAt: new Date().toISOString(),
-        expiresAt: new Date(Date.now() + 24 * 3600_000).toISOString(),
+        timestamp: Date.now(),
         acknowledged: false,
       });
     }
