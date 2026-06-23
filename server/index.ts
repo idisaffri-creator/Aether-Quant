@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import "express-async-errors"; // patches Express 4 to await async middleware
 import { createServer } from "http";
