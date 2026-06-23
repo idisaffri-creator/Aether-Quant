@@ -157,7 +157,8 @@ async function startServer() {
             "https://aether-energy.ai",
             "wss://aether-energy.ai",
             "https://api.aether-energy.ai",
-            "https://fonts.googleapis.com",  // service worker fetches Google Fonts CSS
+            "https://fonts.googleapis.com",
+            "https://fonts.gstatic.com",  // service worker caches Google Font files
           ],
           "frame-ancestors": ["'none'"],
           "form-action": ["'self'"],
