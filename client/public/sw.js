@@ -10,7 +10,7 @@
  * the new SW from interrupting an active session and avoids reload
  * loops.
  */
-const VERSION = "v2.0.0";
+const VERSION = "v3.0.0";
 const STATIC_CACHE = `aether-static-${VERSION}`;
 const API_CACHE = `aether-api-${VERSION}`;
 const STATIC_ASSETS = ["/manifest.json", "/logo.png", "/robots.txt", "/sw.js"];
@@ -95,7 +95,8 @@ self.addEventListener("fetch", (event) => {
   }
 
   // Other static assets: try cache, then network
-  if (request.method === "GET") {
+  // Skip cross-origin requests (fonts, external APIs) — let browser handle them directly
+  if (request.method === "GET" && request.url.startsWith(self.location.origin)) {
     event.respondWith(
       caches.match(request).then((cached) => cached || fetch(request))
     );
