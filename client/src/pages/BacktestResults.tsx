@@ -40,15 +40,15 @@ const DATE_PRESETS = [
   { label: "2Y", months: 24 },
 ];
 
-function generateMockResult(): BacktestResult {
+function generateMockResult(sym = "WTI", bal = 100000): BacktestResult {
   const equityCurve = Array.from({ length: 180 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - 180 + i);
-    return { timestamp: d.getTime(), equity: 100000 + i * 220 + Math.sin(i * 0.08) * 4000 + (Math.random() - 0.5) * 1500 };
+    return { timestamp: d.getTime(), equity: bal + i * 220 + Math.sin(i * 0.08) * 4000 + (Math.random() - 0.5) * 1500 };
   });
   const trades = Array.from({ length: 32 }, (_, i) => ({
     id: `t-${i + 1}`,
-    symbol, side: Math.random() > 0.45 ? "long" : "short" as const,
+    symbol: sym, side: Math.random() > 0.45 ? "long" : "short" as const,
     entryPrice: 70 + Math.random() * 20,
     exitPrice: 72 + Math.random() * 18,
     pnl: (Math.random() - 0.38) * 1800,
@@ -58,9 +58,9 @@ function generateMockResult(): BacktestResult {
   const winCount = trades.filter((t) => t.pnl > 0).length;
   return {
     id: `mock-${Date.now()}`,
-    initialBalance,
-    finalEquity: 118400,
-    totalReturn: 18400,
+    initialBalance: bal,
+    finalEquity: Math.round(bal * 1.184),
+    totalReturn: Math.round(bal * 0.184),
     totalReturnPct: 18.4,
     trades,
     equityCurve,
@@ -165,7 +165,7 @@ export default function Backtest() {
         throw new Error("No result from backtest");
       }
     } catch (err: any) {
-      const mock = generateMockResult();
+      const mock = generateMockResult(symbol, initialBalance);
       setResult(mock);
       toast.success(`Simulated backtest: ${mock.metrics.totalTrades} trades`);
     } finally {
