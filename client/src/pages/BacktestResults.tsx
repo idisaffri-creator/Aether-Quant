@@ -195,7 +195,7 @@ export default function Backtest() {
     try {
       const r = await api.ai.explain({
         strategy: strategy,
-        symbol: orderForm.symbol,
+        symbol: symbol,
         startDate,
         endDate,
         metrics: {
