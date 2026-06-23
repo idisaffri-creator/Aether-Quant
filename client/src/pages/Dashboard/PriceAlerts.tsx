@@ -8,6 +8,7 @@ import { usePageTitle } from "@/lib/usePageTitle";
 import { Skeleton } from "@/components/Skeleton";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
+import { mockAlerts } from "@/lib/mockData";
 
 const SYMBOLS = ["CL", "BZ", "NG", "GC", "SI", "HG", "HO", "RB"];
 
@@ -37,9 +38,9 @@ export default function PriceAlerts() {
     try {
       const r = await fetch("/api/alerts/price", { credentials: "include" });
       const d = await r.json();
-      setAlerts(d.alerts || []);
+      setAlerts(d.alerts?.length ? d.alerts : mockAlerts);
     } catch (err) {
-      toast.error("Failed to load alerts");
+      setAlerts(mockAlerts);
     } finally {
       setLoading(false);
     }

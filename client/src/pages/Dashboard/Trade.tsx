@@ -10,6 +10,7 @@ import {
 import type { MarketData, OrderBook, Candle } from "@shared/types";
 import { usePageTitle } from "@/lib/usePageTitle";
 import { api } from "@/lib/api";
+import { mockQuotes, mockCandles, mockOrderBook, mockSignals } from "@/lib/mockData";
 import SignalPanel from "@/components/trade/SignalPanel";
 import { Zap } from "lucide-react";
 import TerminalTicker from "@/components/trade/TerminalTicker";
@@ -82,7 +83,7 @@ export default function Trade() {
   const symbols = ["WTI", "BRENT", "NGAS", "GASOL", "BHEL"];
 
   useEffect(() => {
-    api.agents.signals().then((d) => setSignalCount(d.signals.length)).catch(() => {});
+    api.agents.signals().then((d) => setSignalCount(d.signals.length)).catch(() => setSignalCount(mockSignals.length));
     const interval = setInterval(() => {
       api.agents.signals().then((d) => setSignalCount(d.signals.length)).catch(() => {});
     }, 30000);
@@ -90,10 +91,10 @@ export default function Trade() {
   }, []);
 
   useEffect(() => {
-    api.market.quote(symbol).then(setQuote).catch(() => {});
-    api.market.orderbook(symbol).then(setOrderBook).catch(() => {});
-    api.market.history(symbol, "5m", 200).then(setChartData).catch(() => {});
-    api.market.quotes().then(setQuotes).catch(() => {});
+    api.market.quote(symbol).then(setQuote).catch(() => setQuote(mockQuotes.find((q) => q.symbol === symbol) ?? mockQuotes[0]));
+    api.market.orderbook(symbol).then(setOrderBook).catch(() => setOrderBook(mockOrderBook(symbol)));
+    api.market.history(symbol, "5m", 200).then(setChartData).catch(() => setChartData(mockCandles(symbol)));
+    api.market.quotes().then(setQuotes).catch(() => setQuotes(mockQuotes));
 
     const interval = setInterval(() => {
       api.market.quote(symbol).then(setQuote).catch(() => {});

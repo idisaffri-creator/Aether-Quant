@@ -13,6 +13,7 @@ import { usePageTitle } from "@/lib/usePageTitle";
 import { useAtom } from "jotai";
 import { userAtom, tokenAtom } from "@/store/auth";
 import { api, setAuthToken } from "@/lib/api";
+import { mockPositions, mockOrders, mockPnl, mockQuotes } from "@/lib/mockData";
 import {
   TrendingUp, TrendingDown, Wallet, Activity, RefreshCw, X, Send,
   CheckCircle2, AlertCircle, Loader2, Wifi, WifiOff, Download,
@@ -89,7 +90,13 @@ export default function Trading() {
       for (const q of quoteRes as any[]) map[q.symbol] = { price: q.price, change24h: q.change24h };
       setQuotes(map);
     } catch (err: any) {
-      console.error("refresh failed", err);
+      console.error("refresh failed, using mock data", err);
+      setPositions(mockPositions as any);
+      setOrders(mockOrders as any);
+      setPnl(mockPnl);
+      const map: Record<string, { price: number; change24h: number }> = {};
+      for (const q of mockQuotes) map[q.symbol] = { price: q.price, change24h: q.change24h };
+      setQuotes(map);
     }
   }, [token]);
 

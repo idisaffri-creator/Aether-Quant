@@ -10,7 +10,7 @@
  * the new SW from interrupting an active session and avoids reload
  * loops.
  */
-const VERSION = "v3.0.0";
+const VERSION = "v3.0.1";
 const STATIC_CACHE = `aether-static-${VERSION}`;
 const API_CACHE = `aether-api-${VERSION}`;
 const STATIC_ASSETS = ["/manifest.json", "/logo.png", "/robots.txt", "/sw.js"];
@@ -45,20 +45,18 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(request)
         .then((res) => {
-          // Only cache GET 200s for short period
           if (request.method === "GET" && res.status === 200) {
             const clone = res.clone();
             caches.open(API_CACHE).then((c) => c.put(request, clone)).catch(() => {});
           }
           return res;
         })
-        .catch(() => caches.match(request))
+        .catch(() => caches.match(request).then((c) => c || new Response(JSON.stringify({ error: "offline" }), { status: 503, headers: { "Content-Type": "application/json" } })))
     );
     return;
   }
 
   // HTML pages (index.html, SPA routes): network-first, never cache
-  // This is the critical fix — old cached index.html was referencing old CSS hashes
   if (request.method === "GET" && (
     url.pathname === "/" ||
     url.pathname === "/index.html" ||
@@ -66,13 +64,12 @@ self.addEventListener("fetch", (event) => {
   )) {
     event.respondWith(
       fetch(request).then((res) => {
-        // Optionally cache successful HTML for offline
         if (res.status === 200) {
           const clone = res.clone();
           caches.open(STATIC_CACHE).then((c) => c.put(request, clone)).catch(() => {});
         }
         return res;
-      }).catch(() => caches.match("/"))
+      }).catch(() => caches.match("/").then((c) => c || new Response("Offline", { status: 503 })))
     );
     return;
   }
@@ -98,7 +95,7 @@ self.addEventListener("fetch", (event) => {
   // Skip cross-origin requests (fonts, external APIs) — let browser handle them directly
   if (request.method === "GET" && request.url.startsWith(self.location.origin)) {
     event.respondWith(
-      caches.match(request).then((cached) => cached || fetch(request))
+      caches.match(request).then((cached) => cached || fetch(request).catch(() => new Response("Offline", { status: 503 })))
     );
   }
 });

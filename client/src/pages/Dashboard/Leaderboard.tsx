@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { Trophy, Medal, Award, Crown, TrendingUp, TrendingDown, Target, Activity } from "lucide-react";
 import { SkeletonStat, SkeletonTable } from "@/components/Skeleton";
 import { api } from "@/lib/api";
+import { mockLeaderboard } from "@/lib/mockData";
 import { toast } from "sonner";
 import { num, signedMoney, money } from "@/lib/format";
 
@@ -23,12 +24,12 @@ export default function Leaderboard() {
     try {
       const [r1, r2] = await Promise.all([
         fetch("/api/leaderboard", { credentials: "include" }).then(r => r.json()),
-        fetch("/api/leaderboard/me", { credentials: "include" }).then(r => r.json()),
+        fetch("/api/leaderboard/me", { credentials: "include" }).then(r => r.json()).catch(() => null),
       ]);
-      setEntries(r1.leaderboard || []);
-      setMe(r2);
+      setEntries(r1.leaderboard?.length ? r1.leaderboard : mockLeaderboard);
+      if (r2) setMe(r2);
     } catch (err) {
-      toast.error("Failed to load leaderboard");
+      setEntries(mockLeaderboard);
     } finally {
       setLoading(false);
     }

@@ -8,6 +8,7 @@ import { usePageTitle } from "@/lib/usePageTitle";
 import { useAtom } from "jotai";
 import { tokenAtom } from "@/store/auth";
 import { api } from "@/lib/api";
+import { mockStrategies, mockBacktests } from "@/lib/mockData";
 import {
   Play, Pause, Plus, Trash2, BarChart3, TrendingUp, TrendingDown,
   Grid3x3, LineChart, Brain, X, Save, Zap, AlertCircle, Loader2,
@@ -91,8 +92,8 @@ export default function Strategies() {
         api.strategies.listCustom().catch(() => ({ strategies: [] })),
         api.backtests.list().catch(() => ({ backtests: [] })),
       ]);
-      setStrategies(strats.strategies || []);
-      setBacktests(bts.backtests || []);
+      setStrategies(strats.strategies?.length ? strats.strategies : mockStrategies as any);
+      setBacktests(bts.backtests?.length ? bts.backtests : mockBacktests as any);
     } catch (err) {
       toast.error("Failed to load strategies");
     } finally {

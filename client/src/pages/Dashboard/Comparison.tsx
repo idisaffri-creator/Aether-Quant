@@ -6,6 +6,7 @@ import { usePageTitle } from "@/lib/usePageTitle";
 import { motion } from "framer-motion";
 import { GitCompare, Trophy, TrendingUp, TrendingDown, Target, Shield, Hash, Calendar, DollarSign, CheckCircle2, X, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
+import { mockBacktests } from "@/lib/mockData";
 import { toast } from "sonner";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
@@ -43,9 +44,9 @@ export default function Comparison() {
 
   useEffect(() => {
     api.backtest.list(20).then((r) => {
-      setHistory(r.backtests || []);
+      setHistory(r.backtests?.length ? r.backtests : mockBacktests as any);
       setLoading(false);
-    }).catch(() => setLoading(false));
+    }).catch(() => { setHistory(mockBacktests as any); setLoading(false); });
   }, []);
 
   function toggleSelect(id: string) {

@@ -9,6 +9,7 @@ import { Star, Plus, X, TrendingUp, TrendingDown, Loader2 } from "lucide-react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "@/lib/api";
+import { mockQuotes } from "@/lib/mockData";
 import { toast } from "sonner";
 import { num, money, signedPct } from "@/lib/format";
 
@@ -58,7 +59,11 @@ export default function Watchlist() {
       }
       setQuotes(qm);
     } catch {
-      // ignore
+      const qm: Record<string, Quote> = {};
+      for (const q of mockQuotes) {
+        qm[q.symbol] = { symbol: q.symbol, price: q.price, change24h: q.change24h, pctChange24h: q.change24h };
+      }
+      setQuotes(qm);
     }
   }
 

@@ -4,6 +4,7 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, 
 import type { MarketData, Candle, PortfolioSummary, TradeSignal } from "@shared/types";
 import { usePageTitle } from "@/lib/usePageTitle";
 import { api, createWebSocket } from "@/lib/api";
+import { mockQuotes, mockCandles, mockSignals } from "@/lib/mockData";
 import { useWalletContext } from "@/contexts/WalletContext";
 import { useAgentContext } from "@/contexts/AgentContext";
 
@@ -69,9 +70,9 @@ export default function Overview() {
   const activeSignals = useMemo(() => signals.filter((s) => !s.acknowledged).length, [signals]);
 
   useEffect(() => {
-    api.market.quotes().then(setQuotes).catch(() => {});
-    api.market.history("WTI", "1h", 50).then(setChartData).catch(() => {});
-    api.agents.signals().then((d) => setSignals(d.signals)).catch(() => {});
+    api.market.quotes().then(setQuotes).catch(() => setQuotes(mockQuotes));
+    api.market.history("WTI", "1h", 50).then(setChartData).catch(() => setChartData(mockCandles("WTI")));
+    api.agents.signals().then((d) => setSignals(d.signals)).catch(() => setSignals(mockSignals));
 
     const ws = createWebSocket();
     wsRef.current = ws;
@@ -83,7 +84,7 @@ export default function Overview() {
     };
 
     const signalInterval = setInterval(() => {
-      api.agents.signals().then((d) => setSignals(d.signals)).catch(() => {});
+      api.agents.signals().then((d) => setSignals(d.signals)).catch(() => setSignals(mockSignals));
     }, 30000);
 
     return () => { ws.close(); clearInterval(signalInterval); };

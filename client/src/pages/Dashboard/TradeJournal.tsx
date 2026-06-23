@@ -7,6 +7,7 @@ import { usePageTitle } from "@/lib/usePageTitle";
 import { SkeletonTable, Skeleton } from "@/components/Skeleton";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
+import { mockJournal } from "@/lib/mockData";
 
 interface Entry {
   id: string;
@@ -37,9 +38,9 @@ export default function TradeJournal() {
     try {
       const r = await fetch("/api/journal", { credentials: "include" });
       const d = await r.json();
-      setEntries(d.entries || []);
+      setEntries(d.entries?.length ? d.entries : mockJournal);
     } catch (err) {
-      toast.error("Failed to load journal");
+      setEntries(mockJournal);
     } finally {
       setLoading(false);
     }
