@@ -37,11 +37,11 @@ export default function PlatformStatsSection() {
       try {
         const fleetRes = await fetch("/api/agents/fleet").then(r => r.json()).catch(() => ({ fleet: [] }));
 
-        // Try to fetch real counts
+        const hasAuth = !!localStorage.getItem("token");
         const [tradesRes, notifRes, stratsRes, healthRes] = await Promise.all([
-          fetch("/api/leaderboard", { credentials: "include" }).then(r => r.json()).catch(() => null),
-          fetch("/api/notifications", { credentials: "include" }).then(r => r.json()).catch(() => null),
-          fetch("/api/strategies/custom", { credentials: "include" }).then(r => r.json()).catch(() => null),
+          hasAuth ? fetch("/api/leaderboard", { credentials: "include" }).then(r => r.json()).catch(() => null) : Promise.resolve(null),
+          hasAuth ? fetch("/api/notifications", { credentials: "include" }).then(r => r.json()).catch(() => null) : Promise.resolve(null),
+          hasAuth ? fetch("/api/strategies/custom", { credentials: "include" }).then(r => r.json()).catch(() => null) : Promise.resolve(null),
           fetch("/api/data/status").then(r => r.json()).catch(() => null),
         ]);
 
