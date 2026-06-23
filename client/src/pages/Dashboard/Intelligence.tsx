@@ -59,7 +59,7 @@ export default function Intelligence() {
             <div key={agent.id} className="glass-card rounded-xl p-4">
               <div className="text-xs font-medium mb-2">{agent.name}</div>
               <div className="grid grid-cols-3 gap-2">
-                {Object.entries(agent.metrics).slice(0, 3).map(([key, value]) => (
+                {Object.entries(agent.metrics ?? {}).slice(0, 3).map(([key, value]) => (
                   <div key={key} className="text-center p-2 rounded-lg bg-accent/30">
                     <div className="text-[10px] text-muted-foreground uppercase">
                       {key.replace(/([A-Z])/g, " $1").trim()}
@@ -69,7 +69,7 @@ export default function Intelligence() {
                     </div>
                   </div>
                 ))}
-                {Object.keys(agent.metrics).length === 0 && (
+                {Object.keys(agent.metrics ?? {}).length === 0 && (
                   <div className="col-span-3 text-center text-[10px] text-muted-foreground py-4">
                     No metrics available. Start the agent to collect data.
                   </div>
