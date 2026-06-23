@@ -2,7 +2,7 @@
  * Service worker for PWA support.
  * VERSION is bumped on every deploy to force-clear stale caches.
  */
-const VERSION = "v4.0.0";
+const VERSION = "v5.0.0";
 const STATIC_CACHE = `aether-static-${VERSION}`;
 const API_CACHE = `aether-api-${VERSION}`;
 const STATIC_ASSETS = ["/manifest.json", "/logo.png", "/robots.txt", "/sw.js"];
@@ -30,7 +30,7 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET") return;
   const url = new URL(request.url);
 
-  // Skip cross-origin requests entirely — let the browser handle them
+  // Skip cross-origin requests entirely
   if (url.origin !== self.location.origin) return;
 
   // API: network-first, never cache errors
@@ -56,7 +56,8 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // HTML pages: network-first, never cache
+  // HTML pages: ALWAYS network-first, NEVER cache
+  // Caching HTML causes stale chunk references after deploys
   if (
     url.pathname === "/" ||
     url.pathname === "/index.html" ||
@@ -64,13 +65,6 @@ self.addEventListener("fetch", (event) => {
   ) {
     event.respondWith(
       fetch(request)
-        .then((res) => {
-          if (res.status === 200) {
-            const clone = res.clone();
-            caches.open(STATIC_CACHE).then((c) => c.put(request, clone)).catch(() => {});
-          }
-          return res;
-        })
         .catch(() =>
           caches.match("/").then((c) =>
             c || new Response("Offline", { status: 503 })
@@ -80,7 +74,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Hashed assets: cache-first
+  // Hashed assets: cache-first (safe because hash changes on each deploy)
   if (url.pathname.startsWith("/assets/")) {
     event.respondWith(
       caches.match(request).then((cached) => {
