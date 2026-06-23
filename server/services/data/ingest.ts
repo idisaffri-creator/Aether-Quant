@@ -21,6 +21,10 @@ import { getFinnhubStatus } from "./adapters/finnhub";
 import { getAlphaVantageStatus } from "./adapters/alphavantage";
 import { getBinanceStatus } from "./adapters/binance";
 import { getFredStatus, fetchAllMacroSeries } from "./adapters/fred";
+import { getWeatherStatus, fetchWeatherDemand } from "./adapters/weather";
+import { getFearGreedStatus, fetchFearGreed } from "./adapters/feargreed";
+import { getOpenInterestStatus, fetchAllOpenInterest } from "./adapters/openinterest";
+import { getCotStatus, fetchCotData } from "./adapters/cot";
 import { broadcastTick } from "../../ws/tickBroadcaster";
 import { processTick } from "../trading/paperEngine";
 import { processSignals } from "../trading/strategyRunner";
@@ -39,11 +43,15 @@ export interface DataFeedStatus {
   alphavantage: ReturnType<typeof getAlphaVantageStatus>;
   binance: ReturnType<typeof getBinanceStatus>;
   fred: ReturnType<typeof getFredStatus>;
+  weather: ReturnType<typeof getWeatherStatus>;
+  feargreed: ReturnType<typeof getFearGreedStatus>;
+  openinterest: ReturnType<typeof getOpenInterestStatus>;
+  cot: ReturnType<typeof getCotStatus>;
   eia: ReturnType<typeof getEiaStatus>;
   newsapi: ReturnType<typeof getNewsapiStatus>;
   gdelt: ReturnType<typeof getGdeltStatus>;
   ollama: { reachable: boolean; model: string };
-  lastRun: { quotes: string | null; eia: string | null; news: string | null; signals: string | null; macro: string | null };
+  lastRun: { quotes: string | null; eia: string | null; news: string | null; signals: string | null; macro: string | null; weather: string | null; feargreed: string | null; openinterest: string | null; cot: string | null };
   ingestHealthy: boolean;
 }
 
@@ -55,6 +63,10 @@ export async function getDataStatus(): Promise<DataFeedStatus> {
     alphavantage: getAlphaVantageStatus(),
     binance: getBinanceStatus(),
     fred: getFredStatus(),
+    weather: getWeatherStatus(),
+    feargreed: getFearGreedStatus(),
+    openinterest: getOpenInterestStatus(),
+    cot: getCotStatus(),
     eia: getEiaStatus(),
     newsapi: getNewsapiStatus(),
     gdelt: getGdeltStatus(),
@@ -67,15 +79,15 @@ export async function getDataStatus(): Promise<DataFeedStatus> {
 async function getIngestRuns(): Promise<DataFeedStatus["lastRun"]> {
   try {
     const v = await cacheGetSet<any>("data:ingest:status", 30, async () => ({
-      quotes: null, eia: null, news: null, signals: null, macro: null,
+      quotes: null, eia: null, news: null, signals: null, macro: null, weather: null, feargreed: null, openinterest: null, cot: null,
     }));
-    return v || { quotes: null, eia: null, news: null, signals: null, macro: null };
+    return v || { quotes: null, eia: null, news: null, signals: null, macro: null, weather: null, feargreed: null, openinterest: null, cot: null };
   } catch {
-    return { quotes: null, eia: null, news: null, signals: null, macro: null };
+    return { quotes: null, eia: null, news: null, signals: null, macro: null, weather: null, feargreed: null, openinterest: null, cot: null };
   }
 }
 
-async function recordRun(key: "quotes" | "eia" | "news" | "signals" | "macro") {
+async function recordRun(key: "quotes" | "eia" | "news" | "signals" | "macro" | "weather" | "feargreed" | "openinterest" | "cot") {
   const s = await getIngestRuns();
   s[key] = new Date().toISOString();
   // Short TTL — not critical, just for /api/data/status display
@@ -91,20 +103,32 @@ export function startIngest(): void {
   const newsMs = parseInt(process.env.NEWS_INTERVAL_MS || "1800000");
   const signalsMs = parseInt(process.env.SIGNALS_INTERVAL_MS || "300000");
   const macroMs = parseInt(process.env.MACRO_INTERVAL_MS || "3600000");
+  const weatherMs = parseInt(process.env.WEATHER_INTERVAL_MS || "14400000");  // 4h
+  const feargreedMs = parseInt(process.env.FEARGREED_INTERVAL_MS || "14400000");  // 4h
+  const openinterestMs = parseInt(process.env.OPENINTEREST_INTERVAL_MS || "900000");  // 15min
+  const cotMs = parseInt(process.env.COT_INTERVAL_MS || "86400000");  // 24h
 
-  logger.info({ quotesMs, eiaMs, newsMs, signalsMs, macroMs }, "ingest worker starting");
+  logger.info({ quotesMs, eiaMs, newsMs, signalsMs, macroMs, weatherMs, feargreedMs, openinterestMs, cotMs }, "ingest worker starting");
 
   void runQuoteTick();
   void runEiaTick();
   void runNewsTick();
   void runSignalTick();
   void runMacroTick();
+  void runWeatherTick();
+  void runFearGreedTick();
+  void runOpenInterestTick();
+  void runCotTick();
 
   intervals.push(setInterval(() => void runQuoteTick(), quotesMs));
   intervals.push(setInterval(() => void runEiaTick(), eiaMs));
   intervals.push(setInterval(() => void runNewsTick(), newsMs));
   intervals.push(setInterval(() => void runSignalTick(), signalsMs));
   intervals.push(setInterval(() => void runMacroTick(), macroMs));
+  intervals.push(setInterval(() => void runWeatherTick(), weatherMs));
+  intervals.push(setInterval(() => void runFearGreedTick(), feargreedMs));
+  intervals.push(setInterval(() => void runOpenInterestTick(), openinterestMs));
+  intervals.push(setInterval(() => void runCotTick(), cotMs));
 }
 
 export function stopIngest(): void {
@@ -171,6 +195,58 @@ async function runMacroTick(): Promise<void> {
     }
   } catch (err) {
     logger.warn({ err: (err as Error).message }, "macro tick failed");
+  }
+}
+
+async function runWeatherTick(): Promise<void> {
+  try {
+    const weather = await fetchWeatherDemand();
+    await recordRun("weather");
+    if (weather) {
+      broadcastTick({ type: "weather", data: weather, ts: Date.now() });
+      logger.info({ nationalHDD: weather.nationalHDD, nationalCDD: weather.nationalCDD, cities: weather.cities.length }, "weather tick");
+    }
+  } catch (err) {
+    logger.warn({ err: (err as Error).message }, "weather tick failed");
+  }
+}
+
+async function runFearGreedTick(): Promise<void> {
+  try {
+    const fg = await fetchFearGreed(7);
+    await recordRun("feargreed");
+    if (fg) {
+      broadcastTick({ type: "feargreed", data: fg, ts: Date.now() });
+      logger.info({ value: fg.current.value, classification: fg.current.classification, trend: fg.trend }, "fear/greed tick");
+    }
+  } catch (err) {
+    logger.warn({ err: (err as Error).message }, "fear/greed tick failed");
+  }
+}
+
+async function runOpenInterestTick(): Promise<void> {
+  try {
+    const oi = await fetchAllOpenInterest();
+    await recordRun("openinterest");
+    if (oi.length > 0) {
+      broadcastTick({ type: "openinterest", data: oi, ts: Date.now() });
+      logger.info({ count: oi.length }, "open interest tick");
+    }
+  } catch (err) {
+    logger.warn({ err: (err as Error).message }, "open interest tick failed");
+  }
+}
+
+async function runCotTick(): Promise<void> {
+  try {
+    const cot = await fetchCotData();
+    await recordRun("cot");
+    if (cot.length > 0) {
+      broadcastTick({ type: "cot", data: cot, ts: Date.now() });
+      logger.info({ count: cot.length }, "cot tick");
+    }
+  } catch (err) {
+    logger.warn({ err: (err as Error).message }, "cot tick failed");
   }
 }
 
