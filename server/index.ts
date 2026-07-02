@@ -1,5 +1,13 @@
 import "dotenv/config";
 import express from "express";
+
+declare global {
+  namespace Express {
+    interface Request {
+      rawBody?: Buffer;
+    }
+  }
+}
 import "express-async-errors"; // patches Express 4 to await async middleware
 import { createServer } from "http";
 import path from "path";
@@ -191,7 +199,15 @@ async function startServer() {
     })
   );
   app.use(compression());
-  app.use(express.json({ limit: "10kb" }));
+  app.use(
+    express.json({
+      limit: "10kb",
+      verify: (req, _res, buf) => {
+        // Retained for HMAC signature verification on provider webhooks (e.g. KYC).
+        (req as express.Request).rawBody = buf;
+      },
+    })
+  );
   app.use(cookieParser());
 
   // ─── Idempotency for all write endpoints ─────────────────────────────

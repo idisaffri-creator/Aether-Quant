@@ -9,6 +9,7 @@
  * The provider handles ID verification, sanctions screening, and AML checks.
  * This service creates inquiries + receives webhooks for status updates.
  */
+import { createHmac, timingSafeEqual } from "crypto";
 import { db, schema } from "../../db";
 import { eq, and, desc } from "drizzle-orm";
 import { nanoid } from "nanoid";
@@ -99,6 +100,57 @@ export async function createInquiry(userId: string): Promise<KycInquiry> {
   }
 
   throw new Error(`Unknown KYC provider: ${provider}`);
+}
+
+/**
+ * Verifies the webhook signature sent by the KYC provider so that only the
+ * provider (holder of the shared webhook secret) can trigger status updates.
+ *   - Persona: `Persona-Signature: t=<timestamp>,v1=<hex hmac-sha256>` over `${t}.${rawBody}`
+ *   - Onfido:  `X-Signature: <hex hmac-sha1>` over the raw body
+ */
+export function verifyWebhookSignature(
+  provider: string,
+  rawBody: Buffer,
+  headers: Record<string, string | string[] | undefined>,
+  secret: string
+): boolean {
+  try {
+    if (provider === "persona") {
+      const header = firstHeaderValue(headers["persona-signature"]);
+      if (!header) return false;
+      const parts = Object.fromEntries(
+        header.split(",").map((pair) => pair.split("=") as [string, string])
+      );
+      const { t: timestamp, v1: signature } = parts;
+      if (!timestamp || !signature) return false;
+      const expected = createHmac("sha256", secret)
+        .update(`${timestamp}.${rawBody.toString("utf8")}`)
+        .digest("hex");
+      return safeCompareHex(expected, signature);
+    }
+
+    if (provider === "onfido") {
+      const signature = firstHeaderValue(headers["x-signature"]);
+      if (!signature) return false;
+      const expected = createHmac("sha1", secret).update(rawBody).digest("hex");
+      return safeCompareHex(expected, signature);
+    }
+
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+function firstHeaderValue(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function safeCompareHex(expectedHex: string, actualHex: string): boolean {
+  const expected = Buffer.from(expectedHex, "hex");
+  const actual = Buffer.from(actualHex, "hex");
+  if (expected.length === 0 || expected.length !== actual.length) return false;
+  return timingSafeEqual(expected, actual);
 }
 
 /**

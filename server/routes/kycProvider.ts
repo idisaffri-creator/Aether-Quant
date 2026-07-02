@@ -3,9 +3,9 @@
  * POST /api/kyc/inquiry     — create a new KYC inquiry (redirects to provider UI)
  * POST /api/kyc/webhook     — provider calls this on status changes
  */
-import { Router, type Request, type Response, raw } from "express";
+import { Router, type Request, type Response } from "express";
 import { authMiddleware } from "../middleware/auth";
-import { createInquiry, handleProviderWebhook, getProviderConfig } from "../services/kyc/provider";
+import { createInquiry, handleProviderWebhook, getProviderConfig, verifyWebhookSignature } from "../services/kyc/provider";
 import { logger } from "../lib/logger";
 
 const router = Router();
@@ -38,8 +38,13 @@ router.post("/webhook", async (req: Request, res: Response) => {
     res.status(503).json({ code: "NOT_CONFIGURED" });
     return;
   }
-  // TODO: verify provider signature (Persona: HMAC-SHA256, Onfido: HMAC-SHA1)
-  // For now, accept and log
+  if (config.provider !== "stub") {
+    if (!req.rawBody || !verifyWebhookSignature(provider, req.rawBody, req.headers, config.webhookSecret)) {
+      logger.warn({ provider }, "KYC webhook signature verification failed");
+      res.status(401).json({ code: "INVALID_SIGNATURE" });
+      return;
+    }
+  }
   try {
     const result = await handleProviderWebhook(provider, req.body);
     res.json(result);
