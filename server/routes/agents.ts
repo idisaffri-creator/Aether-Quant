@@ -1,7 +1,20 @@
 import { Router } from "express";
 import { authMiddleware } from "../middleware/auth";
+import { orchestrator, type AgentId, type CycleRecord } from "../agents/orchestrator";
 
 const router = Router();
+
+// Maps the 6 roster agent ids exposed here (used by the frontend AgentContext
+// since PRD v2/v3) to the orchestrator's internal AgentId — both cover the
+// same 6 roles, they just predate each other and use different id schemes.
+const ORCHESTRATOR_ID_MAP: Record<string, AgentId> = {
+  "aether-trade-01": "trading",
+  "aether-risk-01": "risk",
+  "aether-mkt-01": "market-intel",
+  "aether-comp-01": "compliance",
+  "aether-port-01": "portfolio",
+  "aether-sig-01": "signals",
+};
 
 interface AgentStatus {
   id: string;
@@ -64,8 +77,39 @@ const mockSignals: SignalBody[] = [
   },
 ];
 
-router.get("/status", authMiddleware, (_req, res) => {
-  res.json({ agents: agentStatuses });
+router.get("/status", authMiddleware, async (_req, res) => {
+  // Run a fresh Observe→Think→Act→Check cycle for each roster agent in
+  // parallel (each cycle is bounded to well under 2s — see orchestrator.ts)
+  // so the status response always carries a recent `lastCycle`.
+  try {
+    await Promise.all(
+      Object.values(ORCHESTRATOR_ID_MAP).map((oid) => orchestrator.runCycle(oid).catch(() => null))
+    );
+  } catch {
+    /* best-effort — status still returns without fresh cycles */
+  }
+
+  const withCycles = agentStatuses.map((a) => {
+    const oid = ORCHESTRATOR_ID_MAP[a.id];
+    const lastCycle = oid ? orchestrator.getLastCycle(oid) : null;
+    return { ...a, lastCycle };
+  });
+  res.json({ agents: withCycles });
+});
+
+/**
+ * GET /api/agents/:id/cycles
+ * Last N Observe→Think→Act→Check cycles for a roster agent (Foundation
+ * Engineering — decision-latency observability).
+ */
+router.get("/:id/cycles", authMiddleware, (req, res) => {
+  const oid = ORCHESTRATOR_ID_MAP[req.params.id];
+  if (!oid) {
+    res.status(404).json({ code: "NOT_FOUND", message: "Agent not found", status: 404 });
+    return;
+  }
+  const cycles: CycleRecord[] = orchestrator.getCycles(oid);
+  res.json({ agentId: req.params.id, cycles, lastCycle: cycles.length ? cycles[cycles.length - 1] : null });
 });
 
 router.post("/:id/start", authMiddleware, (req, res) => {

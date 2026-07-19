@@ -48,6 +48,9 @@ import {
   Calculator,
   BookOpen,
   Key,
+  Bot,
+  Network,
+  Gavel,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -71,13 +74,16 @@ import { setAuthToken } from "@/lib/api";
 
 const mainNav = [
   { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { path: "/dashboard/executive", label: "Executive Dashboard", icon: Crown },
   { path: "/dashboard/extractor", label: "Idea Extractor", icon: Lightbulb },
   { path: "/dashboard/backtest", label: "Backtest", icon: BarChart3 },
   { path: "/dashboard/optimization", label: "Optimization", icon: Settings2 },
-  { path: "/dashboard/agents", label: "Agent Workforce", icon: Users },
+  { path: "/dashboard/agents", label: "Digital Trading Floor", icon: Users },
+  { path: "/dashboard/marketplace-agents", label: "Agent Marketplace", icon: Bot },
   { path: "/dashboard/team", label: "Agent Team", icon: UserCircle },
+  { path: "/dashboard/governance", label: "Governance & Approvals", icon: Gavel },
   { path: "/dashboard/pipeline", label: "Pipeline & Ops", icon: GitBranch },
-  { path: "/dashboard/billing", label: "Outcome Billing", icon: Receipt },
+  { path: "/dashboard/billing", label: "AI FinOps & Billing", icon: Receipt },
   { path: "/dashboard/library", label: "Strategy Library", icon: Library },
 ];
 
@@ -88,6 +94,7 @@ const tradingNav = [
   { path: "/dashboard/strategies", label: "Strategies", icon: Brain },
   { path: "/dashboard/analysis", label: "Analysis", icon: BarChart3 },
   { path: "/dashboard/intelligence", label: "Intelligence", icon: Activity },
+  { path: "/dashboard/knowledge-graph", label: "Knowledge Graph", icon: Network },
   { path: "/dashboard/mail", label: "Mail", icon: Mail },
   { path: "/dashboard/audit", label: "Audit Trail", icon: Shield },
   { path: "/dashboard/audit-log", label: "Audit Log", icon: ScrollText },

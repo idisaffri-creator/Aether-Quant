@@ -124,6 +124,49 @@ export const api = {
     signals: () => request<{ signals: TradeSignal[] }>("/agents/signals"),
     acknowledgeSignal: (id: string) =>
       request<{ message: string; signal: TradeSignal }>(`/agents/signals/${id}/acknowledge`, { method: "POST" }),
+    status: () => request<{ agents: Array<{ id: string; name: string; status: "idle" | "running" | "error" | "paused"; lastRun: string | null; metrics: Record<string, number>; lastCycle: { observeMs: number; thinkMs: number; actMs: number; checkMs: number; totalMs: number; at: string } | null }> }>("/agents/status"),
+    start: (id: string) => request<{ message: string; agent: any }>(`/agents/${id}/start`, { method: "POST" }),
+    stop: (id: string) => request<{ message: string; agent: any }>(`/agents/${id}/stop`, { method: "POST" }),
+    cycles: (id: string) => request<{ agentId: string; cycles: any[]; lastCycle: any }>(`/agents/${id}/cycles`),
+  },
+  domainAgents: {
+    catalog: () => request<{ agents: Array<{ key: string; name: string; category: string; description: string; riskTier: "low" | "medium" | "high"; suggestedRiskLimitUsd: number }> }>("/domain-agents/catalog"),
+    deployed: () => request<{ deployments: any[] }>("/domain-agents/deployed"),
+    deploy: (key: string, riskLimitUsd: number) =>
+      request<{ deployment: any; requiresApproval: boolean; degraded?: boolean }>(`/domain-agents/${key}/deploy`, { method: "POST", body: JSON.stringify({ riskLimitUsd }) }),
+    stop: (id: string) => request<{ message: string }>(`/domain-agents/deployments/${id}/stop`, { method: "POST" }),
+  },
+  governance: {
+    policy: () => request<{ policy: Array<{ tier: string; label: string; autonomy: string; description: string; exampleActions: string[] }> }>("/governance/policy"),
+    approvals: () => request<{ approvals: any[] }>("/governance/approvals"),
+    approve: (id: string) => request<{ message: string }>(`/governance/approvals/${id}/approve`, { method: "POST" }),
+    reject: (id: string) => request<{ message: string }>(`/governance/approvals/${id}/reject`, { method: "POST" }),
+    killSwitch: () => request<{ message: string; agentsStopped: number; strategiesDisabled: number; degraded?: boolean }>("/governance/kill-switch", { method: "POST" }),
+  },
+  finops: {
+    summary: () => request<{ agents: Array<{ agentKey: string; name: string; costByType: { ai_model: number; data: number; infra: number }; totalCost: number; attributedPnl: number; netRoi: number }>; portfolioTotalCost: number; portfolioAttributedPnl?: number; portfolioNetRoi: number; note: string }>("/finops/summary"),
+  },
+  knowledgeGraph: {
+    events: (params: { type?: string; symbol?: string } = {}) => {
+      const qs = new URLSearchParams();
+      Object.entries(params).forEach(([k, v]) => { if (v) qs.append(k, String(v)); });
+      const suffix = qs.toString() ? `?${qs}` : "";
+      return request<{ events: any[] }>(`/knowledge-graph/events${suffix}`);
+    },
+    similar: (symbol: string) => request<{ symbol: string; method: string; note: string; periods: any[] }>(`/knowledge-graph/similar?symbol=${encodeURIComponent(symbol)}`),
+  },
+  executive: {
+    summary: () => request<{
+      asOf: string;
+      portfolio: { equity: number; todaysPnl: number; todaysPnlPct: number };
+      risk: { valueAtRisk95: number; exposure: number; exposurePct: number; maxDrawdownPct: number };
+      hedgeEffectiveness: number;
+      agentPerformance: { totalAgents: number; activeDomainAgents: number; pendingApproval: number; avgConfidence: number };
+      marketAlerts: { unread: number; recent: Array<{ id: string; title: string; createdAt: string }> };
+      regulatoryExposure: { kycStatus: string; openFlags: number };
+      aiOperatingCost: { totalUsd: number; avgDecisionLatencyMs: number };
+      avgConfidenceScore: number;
+    }>("/executive/summary"),
   },
   benchmark: {
     list: () => request<{ summaries: Record<string, BenchmarkSummary>; history: { date: string; score: number }[] }>("/benchmark"),

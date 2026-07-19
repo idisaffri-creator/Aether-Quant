@@ -393,5 +393,89 @@ export async function runMigrations(): Promise<void> {
   await safe(`CREATE INDEX IF NOT EXISTS api_keys_prefix_idx ON api_keys (prefix) WHERE revoked_at IS NULL`, "api_keys prefix idx");
   await safe(`CREATE INDEX IF NOT EXISTS api_keys_user_idx ON api_keys (user_id, created_at DESC)`, "api_keys user idx");
 
+  // ─── PRD v4: Agentic Architecture & Governance ──────────────────────
+
+  // Domain agent deployments (Agent Marketplace)
+  await safe(`CREATE TABLE IF NOT EXISTS domain_agent_deployments (
+    id text PRIMARY KEY,
+    user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    agent_key text NOT NULL,
+    name text NOT NULL,
+    risk_limit_usd numeric(20,2) NOT NULL,
+    status text NOT NULL DEFAULT 'pending_approval',
+    confidence numeric(5,4),
+    rationale text,
+    last_action text,
+    next_action text,
+    created_at timestamp NOT NULL DEFAULT now(),
+    updated_at timestamp NOT NULL DEFAULT now()
+  )`, "domain_agent_deployments table");
+  await safe(`CREATE INDEX IF NOT EXISTS domain_agent_deployments_user_idx ON domain_agent_deployments (user_id, created_at DESC)`, "domain_agent_deployments user idx");
+  await safe(`CREATE INDEX IF NOT EXISTS domain_agent_deployments_status_idx ON domain_agent_deployments (status)`, "domain_agent_deployments status idx");
+
+  // Approval requests (Governance queue)
+  await safe(`CREATE TABLE IF NOT EXISTS approval_requests (
+    id text PRIMARY KEY,
+    user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    action_class text NOT NULL,
+    description text NOT NULL,
+    payload jsonb,
+    status text NOT NULL DEFAULT 'pending',
+    created_at timestamp NOT NULL DEFAULT now(),
+    resolved_at timestamp
+  )`, "approval_requests table");
+  await safe(`CREATE INDEX IF NOT EXISTS approval_requests_user_idx ON approval_requests (user_id, created_at DESC)`, "approval_requests user idx");
+  await safe(`CREATE INDEX IF NOT EXISTS approval_requests_status_idx ON approval_requests (status, created_at DESC)`, "approval_requests status idx");
+
+  // Agent cost events (AI FinOps) — simulated cost accounting, see schema.ts comment
+  await safe(`CREATE TABLE IF NOT EXISTS agent_cost_events (
+    id text PRIMARY KEY,
+    user_id text REFERENCES users(id) ON DELETE CASCADE,
+    agent_key text NOT NULL,
+    cost_type text NOT NULL,
+    amount_usd numeric(12,6) NOT NULL,
+    created_at timestamp NOT NULL DEFAULT now()
+  )`, "agent_cost_events table");
+  await safe(`CREATE INDEX IF NOT EXISTS agent_cost_events_agent_idx ON agent_cost_events (agent_key, created_at DESC)`, "agent_cost_events agent idx");
+  await safe(`CREATE INDEX IF NOT EXISTS agent_cost_events_user_idx ON agent_cost_events (user_id, created_at DESC)`, "agent_cost_events user idx");
+
+  // Knowledge graph events (v1)
+  await safe(`CREATE TABLE IF NOT EXISTS kg_events (
+    id text PRIMARY KEY,
+    type text NOT NULL,
+    title text NOT NULL,
+    description text NOT NULL,
+    symbols_affected text NOT NULL,
+    impact text NOT NULL,
+    occurred_at timestamp NOT NULL,
+    source_url text
+  )`, "kg_events table");
+  await safe(`CREATE INDEX IF NOT EXISTS kg_events_type_idx ON kg_events (type, occurred_at DESC)`, "kg_events type idx");
+  await safe(`CREATE INDEX IF NOT EXISTS kg_events_occurred_idx ON kg_events (occurred_at DESC)`, "kg_events occurred idx");
+
+  // Seed a realistic sample timeline of ~20 energy-market events (idempotent).
+  await safe(`INSERT INTO kg_events (id, type, title, description, symbols_affected, impact, occurred_at, source_url) VALUES
+    ('kg-001', 'opec', 'OPEC+ holds output quotas steady', 'OPEC+ ministers agreed to maintain current production quotas through Q3, citing balanced supply-demand conditions.', 'WTI,BRENT', 'bearish', '2026-07-15 14:00:00', NULL),
+    ('kg-002', 'refinery', 'Gulf Coast refinery unplanned outage', 'A major Gulf Coast refinery reported an unplanned unit outage, cutting regional processing capacity by roughly 250,000 bpd.', 'WTI,GASOL', 'bullish', '2026-07-10 09:30:00', NULL),
+    ('kg-003', 'weather', 'Tropical system tracks toward Gulf of Mexico production zone', 'Forecasters raised the likelihood of a tropical system entering the Gulf of Mexico, threatening offshore crude and gas output.', 'WTI,NGAS,GASOL', 'bullish', '2026-07-08 08:00:00', NULL),
+    ('kg-004', 'shipping', 'Tanker incident near Strait of Hormuz lifts war-risk premiums', 'A reported tanker incident near the Strait of Hormuz pushed up war-risk insurance premiums and raised concerns over transit disruption.', 'BRENT,WTI', 'bullish', '2026-07-05 11:15:00', NULL),
+    ('kg-005', 'inventory', 'EIA reports larger-than-expected crude draw', 'EIA weekly data showed a 4.2 million barrel draw in crude inventories, well above analyst expectations.', 'WTI', 'bullish', '2026-07-16 14:30:00', NULL),
+    ('kg-006', 'inventory', 'Gasoline stocks build ahead of demand slowdown', 'Gasoline inventories rose for a second straight week as refiners ramped output ahead of softening driving-season demand.', 'GASOL', 'bearish', '2026-06-25 14:30:00', NULL),
+    ('kg-007', 'opec', 'OPEC+ JMMC reaffirms voluntary production cuts', 'The Joint Ministerial Monitoring Committee reaffirmed existing voluntary output cuts, signaling continued supply discipline.', 'BRENT,WTI', 'bullish', '2026-06-20 13:00:00', NULL),
+    ('kg-008', 'refinery', 'Major US LNG export terminal restarts after maintenance', 'A large US LNG export terminal resumed feedgas intake following a multi-week planned maintenance outage.', 'LNG,NGAS', 'bearish', '2026-06-18 10:00:00', NULL),
+    ('kg-009', 'refinery', 'Gulf Coast refinery completes scheduled turnaround', 'A major Gulf Coast refinery completed its scheduled spring turnaround, returning distillate and gasoline capacity to the market.', 'GASOL,HEATOIL', 'bearish', '2026-06-10 09:00:00', NULL),
+    ('kg-010', 'shipping', 'Panama Canal drought curbs LNG tanker transits', 'Low water levels forced further restrictions on Panama Canal transits, slowing LNG cargo movement toward Asian buyers.', 'LNG,NGAS', 'bullish', '2026-06-05 07:45:00', NULL),
+    ('kg-011', 'opec', 'Libyan crude exports halted amid political unrest', 'Renewed political unrest forced the closure of key Libyan export terminals, removing several hundred thousand bpd from the market.', 'WTI,BRENT', 'bullish', '2026-05-28 12:00:00', NULL),
+    ('kg-012', 'shipping', 'Red Sea attacks force continued Cape of Good Hope rerouting', 'Continued attacks on merchant vessels in the Red Sea kept tanker traffic diverted around the Cape of Good Hope, adding transit time and cost.', 'BRENT,WTI', 'bullish', '2026-05-20 06:30:00', NULL),
+    ('kg-013', 'refinery', 'Pipeline outage disrupts East Coast gasoline supply', 'An unplanned pipeline outage interrupted gasoline deliveries to East Coast markets, tightening regional supply.', 'GASOL', 'bullish', '2026-05-15 15:00:00', NULL),
+    ('kg-014', 'weather', 'Hurricane forecast to enter Gulf production corridor', 'A hurricane was forecast to track through the Gulf of Mexico production corridor, prompting platform evacuations.', 'WTI,NGAS', 'bullish', '2026-05-10 08:00:00', NULL),
+    ('kg-015', 'inventory', 'API reports surprise crude inventory build', 'API data showed a surprise 3.1 million barrel crude build, contrasting with analyst expectations for a draw.', 'WTI', 'bearish', '2026-05-08 20:30:00', NULL),
+    ('kg-016', 'opec', 'OPEC+ accelerates unwind of voluntary cuts', 'OPEC+ announced an accelerated schedule for unwinding voluntary production cuts beginning in the third quarter.', 'WTI,BRENT', 'bearish', '2026-04-30 13:00:00', NULL),
+    ('kg-017', 'refinery', 'Qatar LNG expansion reaches first cargo milestone', 'A major Qatari LNG expansion project loaded its first export cargo, adding new supply to the global LNG market.', 'LNG,NGAS', 'bearish', '2026-04-20 09:00:00', NULL),
+    ('kg-018', 'weather', 'Arctic freeze disrupts Permian Basin production', 'An Arctic cold snap froze wellhead equipment across the Permian Basin, curtailing crude and associated gas output for several days.', 'WTI,NGAS', 'bullish', '2026-02-14 06:00:00', NULL),
+    ('kg-019', 'shipping', 'Suez Canal disruption reroutes crude and product tankers', 'A blockage in the Suez Canal disrupted crude and refined product flows, forcing tankers onto longer alternate routes.', 'BRENT,WTI,GASOL', 'bullish', '2026-01-25 10:00:00', NULL),
+    ('kg-020', 'inventory', 'Distillate stocks fall to multi-year low', 'EIA data showed distillate (diesel/heating oil) inventories falling to their lowest seasonal level in five years.', 'HEATOIL', 'bullish', '2026-03-05 14:30:00', NULL)
+  ON CONFLICT (id) DO NOTHING`, "kg_events seed data");
+
   console.log("[db] Auto-migrations + indexes complete");
 }

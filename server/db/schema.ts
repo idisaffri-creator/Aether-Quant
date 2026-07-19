@@ -321,3 +321,77 @@ export const apiKeys = pgTable("api_keys", {
   revokedAt: timestamp("revoked_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+/**
+ * PRD v4 — Agentic Architecture & Governance layer.
+ */
+
+/**
+ * Domain agent deployments — pre-built domain agents (Brent Spread, Crack
+ * Spread, LNG Forecast, etc.) that a user has deployed from the Agent
+ * Marketplace catalog. Distinct from `customStrategies` (user-authored
+ * strategies) and from the roster agents in server/agents/*.
+ */
+export const domainAgentDeployments = pgTable("domain_agent_deployments", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  agentKey: text("agent_key").notNull(),
+  name: text("name").notNull(),
+  riskLimitUsd: decimal("risk_limit_usd", { precision: 20, scale: 2 }).notNull(),
+  status: text("status", { enum: ["active", "stopped", "pending_approval"] }).notNull().default("pending_approval"),
+  confidence: decimal("confidence", { precision: 5, scale: 4 }),
+  rationale: text("rationale"),
+  lastAction: text("last_action"),
+  nextAction: text("next_action"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+/**
+ * Approval requests — governance queue for actions above the autonomous
+ * threshold (see server/routes/governance.ts for the 4-tier policy).
+ */
+export const approvalRequests = pgTable("approval_requests", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  actionClass: text("action_class", { enum: ["informational", "low", "medium", "high"] }).notNull(),
+  description: text("description").notNull(),
+  payload: jsonb("payload"),
+  status: text("status", { enum: ["pending", "approved", "rejected"] }).notNull().default("pending"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  resolvedAt: timestamp("resolved_at"),
+});
+
+/**
+ * Agent cost events — simulated AI/infra/data cost-accounting for AI FinOps.
+ * NOTE: there is no real billing meter behind this yet; amounts are
+ * plausible synthetic placeholders recorded on agent lifecycle/cycle events.
+ * userId is nullable because system-wide roster agents (server/agents/*)
+ * are not owned by a single user — their cost events are portfolio-wide.
+ */
+export const agentCostEvents = pgTable("agent_cost_events", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").references(() => users.id, { onDelete: "cascade" }),
+  agentKey: text("agent_key").notNull(),
+  costType: text("cost_type", { enum: ["ai_model", "data", "infra"] }).notNull(),
+  amountUsd: decimal("amount_usd", { precision: 12, scale: 6 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+/**
+ * Knowledge graph events (v1) — a curated timeline of market-moving events
+ * (OPEC statements, refinery outages, weather disruptions, shipping
+ * bottlenecks, inventory data) used for the Knowledge Graph page and the
+ * "similar historical periods" heuristic. Not a real graph engine — a
+ * flat, filterable event table is the v1 scope.
+ */
+export const kgEvents = pgTable("kg_events", {
+  id: text("id").primaryKey(),
+  type: text("type", { enum: ["opec", "refinery", "weather", "shipping", "inventory"] }).notNull(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  symbolsAffected: text("symbols_affected").notNull(), // comma-separated symbol list, e.g. "WTI,BRENT"
+  impact: text("impact", { enum: ["bullish", "bearish", "neutral"] }).notNull(),
+  occurredAt: timestamp("occurred_at").notNull(),
+  sourceUrl: text("source_url"),
+});

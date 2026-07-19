@@ -8,14 +8,22 @@ import { usePageTitle } from "@/lib/usePageTitle";
 import { useAtom } from "jotai";
 import { tokenAtom } from "@/store/auth";
 import { api } from "@/lib/api";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import {
   TrendingUp, TrendingDown, Wallet, Activity, Users, Trophy, BarChart3, Bell,
   Target, Shield, Zap, Database, Radio, ArrowUpRight, ArrowDownRight, ChevronRight,
-  AlertCircle, CheckCircle2, Loader2, FileText, Sparkles,
+  AlertCircle, CheckCircle2, Loader2, FileText, Sparkles, Send, Gauge, Lightbulb,
 } from "lucide-react";
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from "recharts";
 import { formatDistanceToNow } from "@/lib/dateUtils";
+
+const TICKER_SYMBOLS: Array<{ symbol: string; label: string }> = [
+  { symbol: "WTI", label: "WTI" },
+  { symbol: "BRENT", label: "Brent" },
+  { symbol: "GASOL", label: "Gasoline" },
+  { symbol: "HEATOIL", label: "Diesel" },
+  { symbol: "NGAS", label: "LNG (Nat Gas)" },
+];
 
 interface Portfolio {
   paperBalance: number;
@@ -55,29 +63,39 @@ interface LeaderboardMe {
 export default function Dashboard() {
   usePageTitle("Dashboard");
   const [token] = useAtom(tokenAtom);
+  const [, setLocation] = useLocation();
   const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
   const [feed, setFeed] = useState<FeedStatus | null>(null);
   const [me, setMe] = useState<LeaderboardMe | null>(null);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
+  const [quotes, setQuotes] = useState<Record<string, { price: number; change24h: number }>>({});
+  const [roster, setRoster] = useState<Array<{ id: string; name: string; status: string }>>([]);
+  const [askInput, setAskInput] = useState("");
   const [loading, setLoading] = useState(true);
 
   async function load() {
     if (!token) return;
     setLoading(true);
     try {
-      const [p, d, lb, n, o] = await Promise.all([
+      const [p, d, lb, n, o, q, a] = await Promise.all([
         fetch("/api/portfolio/analytics", { headers: { Authorization: `Bearer ${token}` } }).then(r => r.ok ? r.json() : null),
         fetch("/api/data/status").then(r => r.json()),
         fetch("/api/leaderboard/me", { headers: { Authorization: `Bearer ${token}` } }).then(r => r.ok ? r.json() : null),
         fetch("/api/notifications?limit=5", { headers: { Authorization: `Bearer ${token}` } }).then(r => r.ok ? r.json() : { notifications: [] }),
         fetch("/api/trading/orders?limit=5", { headers: { Authorization: `Bearer ${token}` } }).then(r => r.ok ? r.json() : { orders: [] }),
+        api.market.quotes().catch(() => []),
+        api.agents.status().catch(() => ({ agents: [] })),
       ]);
       setPortfolio(p);
       setFeed(d);
       setMe(lb);
       setNotifications(n.notifications || []);
       setRecentOrders(o.orders || []);
+      const byKey: Record<string, { price: number; change24h: number }> = {};
+      for (const quote of q as any[]) byKey[quote.symbol] = { price: quote.price, change24h: quote.change24h };
+      setQuotes(byKey);
+      setRoster((a.agents || []).map((ag: any) => ({ id: ag.id, name: ag.name, status: ag.status })));
     } catch (err) {
       console.error("dashboard load failed", err);
     } finally {
@@ -86,6 +104,20 @@ export default function Dashboard() {
   }
 
   useEffect(() => { load(); }, [token]);
+
+  function askAether(e: React.FormEvent) {
+    e.preventDefault();
+    const q = askInput.trim();
+    if (!q) return;
+    setLocation(`/dashboard/ai?q=${encodeURIComponent(q)}`);
+  }
+
+  const insights: string[] = portfolio ? [
+    `Sharpe ratio is ${Number(portfolio.metrics?.sharpeRatio || 0).toFixed(2)} with max drawdown of ${(Number(portfolio.metrics?.maxDrawdownPct || 0) * 100).toFixed(1)}%.`,
+    `Win rate stands at ${(Number(portfolio.metrics?.winRate || 0) * 100).toFixed(1)}% across ${portfolio.totalTrades} trades.`,
+    feed?.available ? `${feed.feeds?.filter(f => f.healthy).length || 0}/${feed.feeds?.length || 0} data feeds are healthy.` : "Some data feeds are degraded — signals may lag.",
+    roster.length ? `${roster.filter(r => r.status === "running").length}/${roster.length} roster agents are actively running.` : "Agent roster is idle.",
+  ] : [];
 
   if (loading || !portfolio) {
     return (
@@ -126,6 +158,80 @@ export default function Dashboard() {
             </div>
           </Link>
         )}
+      </div>
+
+      {/* Today's Market ticker */}
+      <div className="glass-card rounded-xl px-4 py-3 flex items-center gap-1 overflow-x-auto no-scrollbar">
+        <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold shrink-0 mr-2">Today's Market</span>
+        {TICKER_SYMBOLS.map(({ symbol, label }) => {
+          const q = quotes[symbol];
+          const positive = (q?.change24h ?? 0) >= 0;
+          return (
+            <div key={symbol} className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent/20 text-xs font-mono shrink-0 mr-1">
+              <span className="text-muted-foreground font-sans">{label}</span>
+              <span className="text-foreground">{q ? `$${q.price.toFixed(2)}` : "—"}</span>
+              {q && (
+                <span className={positive ? "text-emerald-400" : "text-red-400"}>
+                  {positive ? "+" : ""}{q.change24h.toFixed(2)}%
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Ask Aether */}
+      <form onSubmit={askAether} className="glass-card rounded-xl p-2 flex items-center gap-2">
+        <Sparkles className="w-4 h-4 text-primary ml-2 shrink-0" />
+        <input
+          value={askInput}
+          onChange={(e) => setAskInput(e.target.value)}
+          placeholder="Ask Aether — what should I trade today?"
+          className="flex-1 bg-transparent border-none outline-none text-sm py-2"
+        />
+        <button type="submit" className="p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors shrink-0" aria-label="Ask Aether">
+          <Send className="w-4 h-4" />
+        </button>
+      </form>
+
+      {/* Portfolio quick stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <QuickStat label="Today's P&L" value={`${portfolio.unrealizedPnl >= 0 ? "+" : ""}$${portfolio.unrealizedPnl.toFixed(2)}`} positive={portfolio.unrealizedPnl >= 0} />
+        <QuickStat label="Open Risk" value={`$${portfolio.exposure.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} />
+        <QuickStat label="VaR (95%, 1d)" value={`$${(portfolio.exposure * 0.0272).toLocaleString(undefined, { maximumFractionDigits: 0 })}`} />
+        <QuickStat label="Margin Available" value={`$${Math.max(0, portfolio.paperBalance - portfolio.exposure).toLocaleString(undefined, { maximumFractionDigits: 0 })}`} />
+      </div>
+
+      {/* AI Insights + Agent Workforce strip */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="glass-card rounded-xl p-5">
+          <h3 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1.5 mb-3">
+            <Lightbulb className="w-3.5 h-3.5" /> AI Insights
+          </h3>
+          <ul className="space-y-2">
+            {insights.map((line, i) => (
+              <li key={i} className="text-sm text-foreground/90 flex items-start gap-2">
+                <span className="text-primary mt-1.5 w-1 h-1 rounded-full bg-primary shrink-0" />
+                {line}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="glass-card rounded-xl p-5">
+          <h3 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1.5 mb-3">
+            <Gauge className="w-3.5 h-3.5" /> Agent Workforce
+          </h3>
+          <div className="space-y-2">
+            {roster.map((a) => (
+              <div key={a.id} className="flex items-center gap-2 text-sm">
+                <div className={`w-2 h-2 rounded-full shrink-0 ${a.status === "running" ? "bg-emerald-500 animate-pulse" : a.status === "error" ? "bg-red-500" : "bg-zinc-600"}`} />
+                <span className="flex-1 text-foreground/90">{a.name}</span>
+                <span className="text-xs text-muted-foreground">{a.status}</span>
+              </div>
+            ))}
+          </div>
+          <Link href="/dashboard/agents" className="text-xs text-primary hover:underline mt-3 inline-block">View Digital Trading Floor →</Link>
+        </div>
       </div>
 
       {/* Hero metrics */}
@@ -323,6 +429,15 @@ function MetricCard({ label, value, sub, icon: Icon, positive }: { label: string
       </div>
       <div className={`text-2xl font-display font-bold ${positive === true ? "text-emerald-400" : positive === false ? "text-red-400" : "text-foreground"}`}>{value}</div>
       <div className="text-xs text-muted-foreground mt-0.5">{sub}</div>
+    </div>
+  );
+}
+
+function QuickStat({ label, value, positive }: { label: string; value: string; positive?: boolean }) {
+  return (
+    <div className="glass-card rounded-xl p-3.5">
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{label}</div>
+      <div className={`text-lg font-display font-bold mt-0.5 ${positive === true ? "text-emerald-400" : positive === false ? "text-red-400" : "text-foreground"}`}>{value}</div>
     </div>
   );
 }
