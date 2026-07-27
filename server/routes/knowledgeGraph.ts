@@ -55,7 +55,16 @@ router.get("/events", async (req, res) => {
     res.json({ events: rows });
   } catch (err) {
     logger.warn({ err: (err as Error).message }, "knowledge graph events failed, returning mock fallback");
-    res.json({ events: MOCK_EVENTS });
+    const { type, symbol } = req.query;
+    let events = MOCK_EVENTS;
+    if (type && typeof type === "string") {
+      events = events.filter((e) => e.type === type);
+    }
+    if (symbol && typeof symbol === "string") {
+      const upper = symbol.toUpperCase();
+      events = events.filter((e) => e.symbolsAffected.includes(upper));
+    }
+    res.json({ events });
   }
 });
 

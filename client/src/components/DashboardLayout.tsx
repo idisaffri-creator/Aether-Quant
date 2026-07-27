@@ -75,7 +75,7 @@ import { setAuthToken } from "@/lib/api";
 const mainNav = [
   { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { path: "/dashboard/executive", label: "Executive Dashboard", icon: Crown },
-  { path: "/dashboard/extractor", label: "Idea Extractor", icon: Lightbulb },
+  { path: "/dashboard/extractor", label: "Strategy Studio", icon: Lightbulb },
   { path: "/dashboard/backtest", label: "Backtest", icon: BarChart3 },
   { path: "/dashboard/optimization", label: "Optimization", icon: Settings2 },
   { path: "/dashboard/agents", label: "Digital Trading Floor", icon: Users },
