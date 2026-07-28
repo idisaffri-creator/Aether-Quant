@@ -13,12 +13,42 @@
  */
 import { Router } from "express";
 import { z } from "zod";
+import { desc, sql } from "drizzle-orm";
 import { authMiddleware } from "../middleware/auth";
 import { aiLimiter } from "../middleware/rateLimit";
 import { redis } from "../lib/redis";
 import { logger } from "../lib/logger";
+import { db, schema } from "../db";
 
 const router = Router();
+
+const KG_SYMBOLS = ["WTI", "BRENT", "NGAS", "GOLD", "SILVER", "COPPER", "HEATOIL", "GASOL", "WHEAT", "LNG"];
+
+/**
+ * Small, additive Knowledge Graph hook: if the user's question looks like
+ * "why is X moving" or asks for "similar periods", pull a few relevant
+ * kgEvents into a system-message so the assistant can ground its answer.
+ * Best-effort — returns null on any failure or when nothing matches, and
+ * never blocks/breaks the normal chat flow.
+ */
+async function buildKnowledgeGraphContext(text: string): Promise<string | null> {
+  if (!/\bwhy\b|mov(e|ed|ing)|similar period|comparable period|historical/i.test(text)) return null;
+  const upper = text.toUpperCase();
+  const symbol = KG_SYMBOLS.find((s) => upper.includes(s));
+  if (!symbol) return null;
+  try {
+    const rows = await db.select().from(schema.kgEvents)
+      .where(sql`${schema.kgEvents.symbolsAffected} ILIKE ${"%" + symbol + "%"}`)
+      .orderBy(desc(schema.kgEvents.occurredAt))
+      .limit(3)
+      .execute();
+    if (!rows.length) return null;
+    const lines = rows.map((r) => `- [${new Date(r.occurredAt).toISOString().slice(0, 10)}] ${r.title} (${r.impact}): ${r.description}`).join("\n");
+    return `Relevant knowledge-graph events for ${symbol} (use these if helpful, don't force it):\n${lines}`;
+  } catch {
+    return null;
+  }
+}
 
 type Provider = "openai" | "ollama" | "mock";
 
@@ -139,7 +169,12 @@ router.post("/chat", authMiddleware, aiLimiter, async (req, res) => {
       return;
     }
     const start = Date.now();
-    const result = await chat(parsed.data.messages);
+    const lastUserMsg = [...parsed.data.messages].reverse().find((m) => m.role === "user");
+    const kgContext = lastUserMsg ? await buildKnowledgeGraphContext(lastUserMsg.content) : null;
+    const messagesForModel = kgContext
+      ? [...parsed.data.messages, { role: "system" as const, content: kgContext }]
+      : parsed.data.messages;
+    const result = await chat(messagesForModel);
     logger.info({ userId: req.user!.userId, provider: result.provider, cached: result.cached, ms: Date.now() - start }, "ai chat");
     res.json({
       content: result.content,

@@ -158,7 +158,7 @@ export default function IdeaExtractor() {
             animate={{ opacity: 1, y: 0 }}
           >
             <h1 className="text-2xl font-display font-bold text-foreground mb-2">
-              Idea Extractor
+              Strategy Studio
             </h1>
             <p className="text-sm text-muted-foreground max-w-xl">
               Convert any trading idea into a structured, backtestable strategy.

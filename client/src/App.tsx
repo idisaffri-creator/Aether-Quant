@@ -22,6 +22,10 @@ import Tournaments from "./pages/Dashboard/Tournaments";
 import Optimization from "./pages/Optimization";
 import AgentWorkforce from "./pages/AgentWorkforce";
 import OutcomeBilling from "./pages/OutcomeBilling";
+import AgentMarketplace from "./pages/AgentMarketplace";
+import Governance from "./pages/Governance";
+import KnowledgeGraph from "./pages/KnowledgeGraph";
+import ExecutiveDashboard from "./pages/ExecutiveDashboard";
 import StrategyLibrary from "./pages/StrategyLibrary";
 import Dashboard from "./pages/Dashboard";
 import AgentTeam from "./pages/AgentTeam";
@@ -81,6 +85,10 @@ function Router() {
                 <Route path="/dashboard/backtest" component={BacktestResults} />
                 <Route path="/dashboard/optimization" component={Optimization} />
                 <Route path="/dashboard/agents" component={AgentWorkforce} />
+                <Route path="/dashboard/marketplace-agents" component={AgentMarketplace} />
+                <Route path="/dashboard/governance" component={Governance} />
+                <Route path="/dashboard/knowledge-graph" component={KnowledgeGraph} />
+                <Route path="/dashboard/executive" component={ExecutiveDashboard} />
                 <Route path="/dashboard/team" component={AgentTeam} />
                 <Route path="/dashboard/pipeline" component={Pipeline} />
                 <Route path="/dashboard/billing" component={OutcomeBilling} />

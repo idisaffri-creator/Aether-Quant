@@ -10,7 +10,8 @@ export type AuditAction =
   | "admin.user.create" | "admin.user.update" | "admin.user.suspend" | "admin.user.activate" | "admin.user.reset_password" | "admin.user.delete"
   | "admin.mail.send" | "admin.mail.purge" | "admin.mail.bulk"
   | "rate_limit.exceeded" | "idempotency.conflict"
-  | "security.cors_violation" | "security.suspicious";
+  | "security.cors_violation" | "security.suspicious"
+  | "governance.kill_switch" | "governance.approval_approved" | "governance.approval_rejected";
 
 export interface AuditEntry {
   userId?: string;

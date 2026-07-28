@@ -3,6 +3,7 @@
  * Multi-provider: OpenAI (gpt-4o-mini) → Ollama (llama3.1:8b) → mock.
  */
 import { useState, useEffect, useRef } from "react";
+import { useLocation } from "wouter";
 import { usePageTitle } from "@/lib/usePageTitle";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Sparkles, Loader2, Bot, User, Trash2, Settings, Zap, TrendingUp, Shield } from "lucide-react";
@@ -42,6 +43,8 @@ const SYMBOLS = [
 export default function AIAssistant() {
   usePageTitle("AI Assistant");
   const [token] = useAtom(tokenAtom);
+  const [, setLocation] = useLocation();
+  const askedFromQuery = useRef(false);
   const [messages, setMessages] = useState<Message[]>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
@@ -67,6 +70,19 @@ export default function AIAssistant() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-50))); } catch {}
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
+
+  // "Ask Aether" homepage bar hands off a question via ?q=... — pick it up
+  // once, send it, then clean the URL so a refresh doesn't resend it.
+  useEffect(() => {
+    if (askedFromQuery.current || !token) return;
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get("q");
+    if (q && q.trim()) {
+      askedFromQuery.current = true;
+      sendMessage(q.trim());
+      setLocation("/dashboard/ai", { replace: true });
+    }
+  }, [token]);
 
   async function sendMessage(text?: string) {
     const msg = (text ?? input).trim();
